@@ -76,7 +76,7 @@ void print_waveform(double *samples, int num_samples) {
 // TODO: These formulas need to be confirmed!
 // Sine wave: y(t) = A * sin(2 * PI * f * t)
 double sine_sample(double time) {
-  return sin(2.0 * PI * time);
+  return sin(2.0 * M_PI * time);
 }
 
 // Sawtooth wave: y(t) = A * (2 * (f * t - floor(0.5 + f * t)))
@@ -86,5 +86,5 @@ double sawtooth_sample(double time) {
 
 // Square wave: y(t) = A * sign(sin(2 * PI * f * t))
 double square_sample(double time) {
-  return sin(2.0 * PI * time) >= 0 ? 1.0 : -1.0;
+  return sin(2.0 * M_PI * time) >= 0 ? 1.0 : -1.0;
 }

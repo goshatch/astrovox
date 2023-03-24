@@ -2,7 +2,6 @@
 #define JUNO_H
 
 #define SAMPLE_RATE 44100.0
-#define PI 3.14159265358979323846
 
 #define SINE_WAVE 0
 #define SAWTOOTH_WAVE 1
