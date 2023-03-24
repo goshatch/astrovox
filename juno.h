@@ -3,9 +3,7 @@
 
 #define SAMPLE_RATE 44100.0
 
-#define SINE_WAVE 0
-#define SAWTOOTH_WAVE 1
-#define SQUARE_WAVE 2
+enum wave_types { SINE_WAVE, SAWTOOTH_WAVE, SQUARE_WAVE };
 
 typedef double (*sample_generator)(double);
 
