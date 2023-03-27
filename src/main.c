@@ -37,12 +37,11 @@ int main(void) {
 
     int c = getch();
 
-    // TODO: Figure out why state is not changed on left/right keypress
     if (c == 'q' || c == 'Q') {
       break;
-    } else if (c == KEY_LEFT) {
+    } else if (c == 'j') {
       app_state.gen_index = (app_state.gen_index - 1 + gen_count) % gen_count;
-    } else if (c == KEY_RIGHT) {
+    } else if (c == 'k') {
       app_state.gen_index = (app_state.gen_index + 1) % gen_count;
     }
   }
