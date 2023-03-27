@@ -1,19 +1,35 @@
-cc = gcc
-cflags = -Wall -Wextra -pedantic -std=c99
-build_dir = build
+CC = clang
+CFLAGS = -std=c99 -Wall -Wextra -pedantic
+LDFLAGS = -lm -lncurses
 
-srcs = juno.c
-objs = $(srcs:%.c=$(build_dir)/%.o)
+BUILD_DIR = build
+SRC_DIR = src
 
-$(build_dir)/juno: $(objs)
-	$(cc) $(cflags) -o $@ $^
+TARGET = juno
+DEBUG_TARGET = juno_debug
 
-$(build_dir)/%.o: %.c | $(build_dir)
-	$(cc) $(cflags) -c -o $@ $<
+SRCS = $(wildcard $(SRC_DIR)/*.c)
+OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
+DEBUG_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/debug/%.o,$(SRCS))
 
-$(build_dir):
-	mkdir -p $(build_dir)
+.PHONY: all debug clean
 
-.phony: clean
+all: $(BUILD_DIR)/$(TARGET)
+
+debug: CFLAGS += -g
+debug: $(BUILD_DIR)/$(DEBUG_TARGET)
+
+$(BUILD_DIR)/$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) $(OBJS) -o $@ $(LDFLAGS)
+
+$(BUILD_DIR)/$(DEBUG_TARGET): $(DEBUG_OBJS)
+	$(CC) $(CFLAGS) $(DEBUG_OBJS) -o $@ $(LDFLAGS)
+
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/debug/%.o: $(SRC_DIR)/%.c
+	$(CC) $(CFLAGS) -g -c $< -o $@
+
 clean:
-	rm -rf $(build_dir)
+	rm -f $(OBJS) $(DEBUG_OBJS) $(BUILD_DIR)/$(TARGET) $(BUILD_DIR)/$(DEBUG_TARGET)
