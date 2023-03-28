@@ -8,5 +8,6 @@ typedef double (*wave_gen)(double);
 double sine_wave_gen(double time);
 double sawtooth_wave_gen(double time);
 double square_wave_gen(double time);
+char* wave_name(enum wave_types type);
 
 #endif

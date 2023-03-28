@@ -16,3 +16,16 @@ double sawtooth_wave_gen(double time) {
 double square_wave_gen(double time) {
   return sin(2.0 * M_PI * time) >= 0 ? 1.0 : -1.0;
 }
+
+char* wave_name(enum wave_types type) {
+  switch (type) {
+    case SINE_WAVE:
+      return "Sine";
+    case SAWTOOTH_WAVE:
+      return "Sawtooth";
+    case SQUARE_WAVE:
+      return "Square";
+    default:
+      return "Unknown";
+  }
+}
