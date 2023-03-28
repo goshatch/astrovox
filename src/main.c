@@ -1,3 +1,4 @@
+#include <locale.h>
 #include <ncurses.h>
 #include <signal.h>
 #include <stdio.h>
@@ -15,6 +16,7 @@ int main(void) {
   struct app_state state = { .gen_index = 0, .time_index = 0.0 };
 
   // Initialise ncurses UI
+  setlocale(LC_ALL, "");
   initscr();
   noecho();
   cbreak();
@@ -45,8 +47,7 @@ int main(void) {
     // Display the waveform
     plot_waveform(waveform, BUFFER_SIZE, 1.0, win);
 
-    mvprintw(WINDOW_HEIGHT + 2, 0, "Waveform type: %s (j/k to change) | %f", wave_name(state.gen_index), state.time_index);
-    mvprintw(WINDOW_HEIGHT + 3, 0, "Press q to quit");
+    mvprintw(WINDOW_HEIGHT + 1, 0, "OSC %s | TIME %f", wave_name(state.gen_index), state.time_index);
 
     refresh();
 

@@ -20,11 +20,11 @@ double square_wave_gen(double time) {
 char* wave_name(enum wave_types type) {
   switch (type) {
     case SINE_WAVE:
-      return "Sine";
+      return "◠◡";
     case SAWTOOTH_WAVE:
-      return "Sawtooth";
+      return "⩘⩘";
     case SQUARE_WAVE:
-      return "Square";
+      return "⨅_";
     default:
       return "Unknown";
   }

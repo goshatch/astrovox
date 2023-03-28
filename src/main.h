@@ -2,7 +2,7 @@
 #define MAIN_H
 
 #define SAMPLE_RATE 44100.0
-#define BUFFER_SIZE 80
+#define BUFFER_SIZE 512
 
 #define WINDOW_WIDTH 80
 #define WINDOW_HEIGHT 20
