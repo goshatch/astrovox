@@ -5,7 +5,9 @@
 #define BUFFER_SIZE 512
 
 #define WINDOW_WIDTH 80
-#define WINDOW_HEIGHT 20
+#define WINDOW_HEIGHT 21
+
+#define MAX_FPS 24
 
 /* Forward declaration for the ncurses WINDOW type */
 struct WINDOW;

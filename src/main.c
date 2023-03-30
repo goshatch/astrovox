@@ -4,6 +4,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "main.h"
 #include "waveforms.h"
@@ -20,6 +21,9 @@ int main(void) {
   double increment =
       frequency / SAMPLE_RATE * (BUFFER_SIZE / (double)(WINDOW_WIDTH - 2));
 
+  const double frame_duration = 1.0 / MAX_FPS;
+  double last_frame_time = 0.0;
+
   // Initialise ncurses UI
   setlocale(LC_ALL, "");
   initscr();
@@ -30,10 +34,9 @@ int main(void) {
   // Create window for displaying waveform
   WINDOW *win = newwin(WINDOW_HEIGHT, WINDOW_WIDTH, 0, 0);
   wrefresh(win);
+  box(win, 0, 0); // Draw the box around the waveform window
 
   while (1) {
-    clear();
-
     // Generate a waveform using the currently selected generator
     double waveform[BUFFER_SIZE];
     for (int i = 0; i < BUFFER_SIZE; i++) {
@@ -50,9 +53,17 @@ int main(void) {
       }
     }
 
-    // Display the waveform
+    // Display the waveform if it's time to redraw
+    double current_time = (double)clock() / CLOCKS_PER_SEC;
+    if (current_time - last_frame_time < frame_duration) { continue; }
+    last_frame_time = current_time;
+
+    werase(win); // Clear the waveform window
     plot_waveform(waveform, BUFFER_SIZE, max_val, win);
-    mvprintw(WINDOW_HEIGHT + 1, 0, "OSC %s | TIME %f", wave_name(state.gen_index), state.time_index);
+    box(win, 0, 0); // Draw the box around the waveform window
+    wnoutrefresh(win); // Refresh the waveform window without updating the screen
+    mvprintw(WINDOW_HEIGHT, 0, "OSC %s | TIME %f",
+             wave_name(state.gen_index), state.time_index);
     refresh();
 
     int c = getch();
@@ -80,15 +91,19 @@ void plot_waveform(double *waveform, int waveform_len, double max_val, WINDOW *w
   // Clear waveform window
   werase(win);
 
+  // Padding at the top and bottom of the waveform
+  int v_padding = 1;
+
   // Plot waveform
-  double y_scale = (double)WINDOW_HEIGHT / (2.0 * max_val);
+  double y_scale = (double)(WINDOW_HEIGHT - (4 * v_padding)) / (2.0 * max_val);
   double x_scale = (double)WINDOW_WIDTH / waveform_len;
 
+  // Bresenham line-drawing algorithm
   for (int i = 0; i < waveform_len - 1; i++) {
     int x1 = i * x_scale + 1;
     int x2 = (i + 1) * x_scale + 1;
-    int y1 = (WINDOW_HEIGHT - 2) / 2 - (int)(waveform[i] * y_scale) + 1;
-    int y2 = (WINDOW_HEIGHT - 2) / 2 - (int)(waveform[i + 1] * y_scale) + 1;
+    int y1 = (WINDOW_HEIGHT - 4) / 2 - (int)(waveform[i] * y_scale) + v_padding + 1;
+    int y2 = (WINDOW_HEIGHT - 4) / 2 - (int)(waveform[i + 1] * y_scale) + v_padding + 1;
 
     // Draw a line between the two points
     int y_diff = abs(y2 - y1);
