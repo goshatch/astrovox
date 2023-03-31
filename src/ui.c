@@ -7,9 +7,6 @@
 #include "waveforms.h"
 
 struct juno_ui init_ui(void) {
-  const double frequency = 20.0; // 20 Hz
-  const double increment =
-      frequency / SAMPLE_RATE * (BUFFER_SIZE / (double)(WINDOW_WIDTH - 2));
   const double frame_duration = 1.0 / MAX_FPS;
 
   // Initialise ncurses UI
@@ -25,22 +22,22 @@ struct juno_ui init_ui(void) {
   box(win, 0, 0); // Draw the box around the waveform window
 
   struct juno_ui ui = {.win = win,
-                       .frequency = frequency,
-                       .time_index_increment = increment,
                        .frame_duration = frame_duration};
   return ui;
 }
 
 void ui_tick(struct juno_ui *ui, struct juno_state *state, double *waveform,
              int waveform_len, double max_val) {
+  char note_name[4];
+  get_note_name(state->note, note_name);
   werase(ui->win); // Clear the waveform window
   plot_waveform(waveform, waveform_len, max_val, ui->win);
   box(ui->win, 0, 0); // Draw the box around the waveform window
 
   // Refresh the waveform window without updating the screen
   wnoutrefresh(ui->win);
-  mvprintw(WINDOW_HEIGHT, 0, "OSC %s | TIME %f", wave_name(state->gen_index),
-           state->time_index);
+  mvprintw(WINDOW_HEIGHT, 0, "OSC %s | %s | TIME %f",
+           wave_name(state->gen_index), note_name, state->time_index);
 }
 
 void plot_waveform(double *waveform, int waveform_len, double max_val, WINDOW *win) {
@@ -52,7 +49,7 @@ void plot_waveform(double *waveform, int waveform_len, double max_val, WINDOW *w
 
   // Plot waveform
   double y_scale = (double)(WINDOW_HEIGHT - (4 * v_padding)) / (2.0 * max_val);
-  double x_scale = (double)WINDOW_WIDTH / waveform_len;
+  double x_scale = (double)WINDOW_WIDTH / (waveform_len / WAVEFORM_ZOOM_FACTOR);
 
   // Bresenham line-drawing algorithm
   for (int i = 0; i < waveform_len - 1; i++) {
@@ -94,4 +91,18 @@ void plot_waveform(double *waveform, int waveform_len, double max_val, WINDOW *w
 
   wnoutrefresh(win);
   doupdate();
+}
+
+const char* note_names[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+
+void get_note_name(int key_position, char *note_name) {
+  if (key_position == -1) {
+    snprintf(note_name, 4, "-");
+  } else {
+    int midi_note = key_position + 20; // Calculate the MIDI note number
+    int octave = midi_note / 12 - 1;   // Find the octave number
+    int note_index =
+        midi_note % 12; // Calculate the note index within the octave
+    snprintf(note_name, 4, "%s%d", note_names[note_index], octave);
+  }
 }
