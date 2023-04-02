@@ -12,6 +12,8 @@ float note_frequency(int note_pos);
 struct juno_state {
   int gen_index;
   int note;
+	int octave;
+	int key_pressed;
   float time_index;
 	float waveform[BUFFER_SIZE];
 };

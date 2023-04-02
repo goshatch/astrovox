@@ -22,7 +22,7 @@ static int audio_callback(const void *inputBuffer, void *outputBuffer,
   (void)statusFlags;
 
   for (unsigned long i = 0; i < framesPerBuffer; i++) {
-    float sample = state->waveform[i % BUFFER_SIZE];
+    float sample = state->key_pressed ? state->waveform[i % BUFFER_SIZE] : 0.0f;
     *out++ = sample; // Left channel
     *out++ = sample; // Right channel
   }
@@ -35,7 +35,7 @@ int main(void) {
 
   wave_gen generators[] = {sine_wave_gen, sawtooth_wave_gen, square_wave_gen};
   int gen_count = sizeof generators / sizeof(wave_gen);
-  struct juno_state state = { .gen_index = 0, .note = -1, .time_index = 0.0 };
+  struct juno_state state = { .gen_index = 0, .note = -1, .octave = 3, .time_index = 0.0 };
   struct juno_ui ui = init_ui();
   float last_frame_time = 0.0;
 
@@ -95,16 +95,36 @@ int main(void) {
     ui_tick(&ui, &state, BUFFER_SIZE, max_val);
 
     int c = getch();
-    if (c == 'q' || c == 'Q') {
-      break;
-    } else if (c == 'j') {
+    if (c == 'j') {
       state.gen_index = (state.gen_index - 1 + gen_count) % gen_count;
     } else if (c == 'k') {
       state.gen_index = (state.gen_index + 1) % gen_count;
-    } else if (c == 'h') {
-      state.note--;
-    } else if (c == 'l') {
-      state.note++;
+    } else if (c == 'h') { // Shift octave down
+      if (state.note > 11) {
+        state.note -= 12;
+        state.octave--;
+      }
+    } else if (c == 'l') { // Shift octave up
+      if (state.note < 75) {
+        state.note += 12;
+        state.octave++;
+      }
+    } else {
+      const char *white_keys = "qwertyuiop";
+      const char *black_keys = "23 567 90";
+      const char *pos = strchr(white_keys, c);
+      if (pos) {
+        state.note = (pos - white_keys) + 4 + (12 * state.octave);
+        state.key_pressed = 1;
+      } else {
+        pos = strchr(black_keys, c);
+        if (pos) {
+          state.note = (pos - black_keys) + 5 + (12 * state.octave);
+          state.key_pressed = 1;
+        } else {
+          state.key_pressed = 0;
+        }
+      }
     }
   }
 
