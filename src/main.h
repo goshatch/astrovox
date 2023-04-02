@@ -7,12 +7,13 @@
 #define A4_FREQUENCY 440.0
 
 void sigint_handler(int sig);
-double note_frequency(int note_pos);
+float note_frequency(int note_pos);
 
 struct juno_state {
   int gen_index;
   int note;
-  double time_index;
+  float time_index;
+	float waveform[BUFFER_SIZE];
 };
 
 #endif

@@ -1,6 +1,6 @@
 CC = clang
 CFLAGS = -std=c99 -Wall -Wextra -pedantic
-LDFLAGS = -lm -lncurses
+LDFLAGS = -lm -lncurses -lportaudio
 
 BUILD_DIR = build
 SRC_DIR = src

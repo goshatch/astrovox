@@ -7,7 +7,7 @@
 #include "waveforms.h"
 
 struct juno_ui init_ui(void) {
-  const double frame_duration = 1.0 / MAX_FPS;
+  const float frame_duration = 1.0 / MAX_FPS;
 
   // Initialise ncurses UI
   setlocale(LC_ALL, "");
@@ -26,12 +26,12 @@ struct juno_ui init_ui(void) {
   return ui;
 }
 
-void ui_tick(struct juno_ui *ui, struct juno_state *state, double *waveform,
-             int waveform_len, double max_val) {
+void ui_tick(struct juno_ui *ui, struct juno_state *state, int waveform_len,
+             float max_val) {
   char note_name[4];
   get_note_name(state->note, note_name);
   werase(ui->win); // Clear the waveform window
-  plot_waveform(waveform, waveform_len, max_val, ui->win);
+  plot_waveform(state->waveform, waveform_len, max_val, ui->win);
   box(ui->win, 0, 0); // Draw the box around the waveform window
 
   // Refresh the waveform window without updating the screen
@@ -40,7 +40,7 @@ void ui_tick(struct juno_ui *ui, struct juno_state *state, double *waveform,
            wave_name(state->gen_index), note_name, state->time_index);
 }
 
-void plot_waveform(double *waveform, int waveform_len, double max_val, WINDOW *win) {
+void plot_waveform(float *waveform, int waveform_len, float max_val, WINDOW *win) {
   // Clear waveform window
   werase(win);
 
@@ -48,8 +48,8 @@ void plot_waveform(double *waveform, int waveform_len, double max_val, WINDOW *w
   int v_padding = 1;
 
   // Plot waveform
-  double y_scale = (double)(WINDOW_HEIGHT - (4 * v_padding)) / (2.0 * max_val);
-  double x_scale = (double)WINDOW_WIDTH / (waveform_len / WAVEFORM_ZOOM_FACTOR);
+  float y_scale = (float)(WINDOW_HEIGHT - (4 * v_padding)) / (2.0 * max_val);
+  float x_scale = (float)WINDOW_WIDTH / (waveform_len / WAVEFORM_ZOOM_FACTOR);
 
   // Bresenham line-drawing algorithm
   for (int i = 0; i < waveform_len - 1; i++) {
