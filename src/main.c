@@ -9,7 +9,7 @@
 
 #include "main.h"
 #include "ui.h"
-#include "waveforms.h"
+#include "state.h"
 
 static int audio_callback(const void *inputBuffer, void *outputBuffer,
                           unsigned long framesPerBuffer,
@@ -33,9 +33,7 @@ static int audio_callback(const void *inputBuffer, void *outputBuffer,
 int main(void) {
   signal(SIGINT, sigint_handler);
 
-  wave_gen generators[] = {sine_wave_gen, sawtooth_wave_gen, square_wave_gen};
-  int gen_count = sizeof generators / sizeof(wave_gen);
-  struct juno_state state = { .gen_index = 0, .note = -1, .octave = 3, .time_index = 0.0 };
+  struct juno_state state = { .osc = init_osc(SAWTOOTH_WAVE, 0.0), .note = -1, .octave = 3, .time_index = 0.0 };
   struct juno_ui ui = init_ui();
   float last_frame_time = 0.0;
 
@@ -69,7 +67,7 @@ int main(void) {
         frequency / SAMPLE_RATE * (BUFFER_SIZE / (float)(WINDOW_WIDTH - 2));
     // float waveform[BUFFER_SIZE];
     for (int i = 0; i < BUFFER_SIZE; i++) {
-      state.waveform[i] = generators[state.gen_index](state.time_index);
+      state.waveform[i] = state.osc.generator(state.time_index);
       state.time_index += increment;
       // Keep the time_index in the range [0.0, 1.0) to ensure the waveform
       // loops correctly
@@ -96,9 +94,9 @@ int main(void) {
 
     int c = getch();
     if (c == 'j') {
-      state.gen_index = (state.gen_index - 1 + gen_count) % gen_count;
+      prev_wave_gen(&state.osc);
     } else if (c == 'k') {
-      state.gen_index = (state.gen_index + 1) % gen_count;
+      next_wave_gen(&state.osc);
     } else if (c == 'h') { // Shift octave down
       if (state.note > 11) {
         state.note -= 12;

@@ -3,8 +3,9 @@
 #include <stdlib.h>
 
 #include "main.h"
+#include "state.h"
 #include "ui.h"
-#include "waveforms.h"
+#include "oscillator.h"
 
 struct juno_ui init_ui(void) {
   const float frame_duration = 1.0 / MAX_FPS;
@@ -37,7 +38,7 @@ void ui_tick(struct juno_ui *ui, struct juno_state *state, int waveform_len,
   // Refresh the waveform window without updating the screen
   wnoutrefresh(ui->win);
   mvprintw(WINDOW_HEIGHT, 0, "OSC %s | %s | TIME %f",
-           wave_name(state->gen_index), note_name, state->time_index);
+           wave_name(state->osc.type), note_name, state->time_index);
 }
 
 void plot_waveform(float *waveform, int waveform_len, float max_val, WINDOW *win) {
