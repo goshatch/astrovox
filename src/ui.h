@@ -13,8 +13,8 @@ struct WINDOW;
 struct juno_state;
 
 struct juno_ui {
-  WINDOW *win;
-  float frame_duration;
+	WINDOW *win;
+	float frame_duration;
 };
 
 struct juno_ui init_ui(void);
