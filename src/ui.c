@@ -40,6 +40,7 @@ ui_tick(struct juno_ui *ui, struct juno_state *state, int waveform_len, float ma
 	// Refresh the waveform window without updating the screen
 	wnoutrefresh(ui->win);
 	mvprintw(WINDOW_HEIGHT, 0, "OSC %s | %s | TIME %f", wave_name(state->osc.type), note_name, state->time_index);
+	mvprintw(WINDOW_HEIGHT + 1, 0, "DEBUG | env->state: %d, env->current_level: %f", state->env.state, state->env.current_level);
 }
 
 void

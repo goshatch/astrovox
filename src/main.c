@@ -22,6 +22,8 @@ audio_callback(const void *inputBuffer, void *outputBuffer, unsigned long frames
 
 	for (unsigned long i = 0; i < framesPerBuffer; i++) {
 		float sample = state->key_pressed ? state->waveform[i % BUFFER_SIZE] : 0.0f;
+		float env_value = env_process(&state->env);
+		sample *= env_value;
 		*out++ = sample; // Left channel
 		*out++ = sample; // Right channel
 	}
@@ -34,7 +36,14 @@ main(void)
 {
 	signal(SIGINT, sigint_handler);
 
-	struct juno_state state = {.osc = init_osc(SAWTOOTH_WAVE, 0.0), .note = -1, .octave = 3, .time_index = 0.0};
+	struct juno_state state = {
+		.osc = init_osc(SAWTOOTH_WAVE, 0.0),
+		.env = init_env(0.1f, 0.1f, 0.8f, 0.2f, SAMPLE_RATE),
+		.note = -1,
+		.octave = 3,
+		.time_index = 0.0
+	};
+
 	struct juno_ui ui = init_ui();
 	float last_frame_time = 0.0;
 
@@ -61,9 +70,8 @@ main(void)
 
 	while (1) {
 		// Generate a waveform using the currently selected generator
-		float frequency = note_frequency(state.note);
 		float increment =
-			frequency / SAMPLE_RATE * (BUFFER_SIZE / (float)(WINDOW_WIDTH - 2));
+			state.osc.frequency / SAMPLE_RATE * (BUFFER_SIZE / (float)(WINDOW_WIDTH - 2));
 		// float waveform[BUFFER_SIZE];
 		for (int i = 0; i < BUFFER_SIZE; i++) {
 			state.waveform[i] = state.osc.generator(state.time_index);
@@ -112,14 +120,19 @@ main(void)
 			const char *pos = strchr(white_keys, c);
 			if (pos) {
 				state.note = (pos - white_keys) + 4 + (12 * state.octave);
+				state.osc.frequency = note_frequency(state.note);
 				state.key_pressed = 1;
+				env_note_on(&state.env);
 			} else {
 				pos = strchr(black_keys, c);
 				if (pos) {
 					state.note = (pos - black_keys) + 5 + (12 * state.octave);
+					state.osc.frequency = note_frequency(state.note);
 					state.key_pressed = 1;
+					env_note_on(&state.env);
 				} else {
 					state.key_pressed = 0;
+					env_note_off(&state.env);
 				}
 			}
 		}
