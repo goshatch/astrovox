@@ -8,6 +8,7 @@
 #include <time.h>
 
 #include "main.h"
+#include "oscillator.h"
 #include "ui.h"
 #include "state.h"
 
@@ -15,15 +16,23 @@ static int
 audio_callback(const void *inputBuffer, void *outputBuffer, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData)
 {
 	float *out = (float *)outputBuffer;
-	struct juno_state *state = (struct juno_state *)userData;
+	struct state *state = (struct state *)userData;
 	(void)inputBuffer; // Prevent unused variable warnings
 	(void)timeInfo;
 	(void)statusFlags;
 
+	float frequency = note_frequency(state->voices[0].input.note);
+	float increment = frequency / SAMPLE_RATE;
+
 	for (unsigned long i = 0; i < framesPerBuffer; i++) {
-		float sample = state->key_pressed ? state->waveform[i % BUFFER_SIZE] : 0.0f;
-		float env_value = env_process(&state->env);
-		sample *= env_value;
+		float sample = 0.0f;
+		if (state->voices[0].input.key_pressed) {
+			sample = state->voices[0].osc.generator(state->time_index);
+			state->time_index += increment;
+			if (state->time_index >= 1.0f) {
+				state->time_index -= 1.0f;
+			}
+		}
 		*out++ = sample; // Left channel
 		*out++ = sample; // Right channel
 	}
@@ -36,15 +45,13 @@ main(void)
 {
 	signal(SIGINT, sigint_handler);
 
-	struct juno_state state = {
-		.osc = init_osc(SAWTOOTH_WAVE, 0.0),
-		.env = init_env(0.1f, 0.1f, 0.8f, 0.2f, SAMPLE_RATE),
-		.note = -1,
-		.octave = 3,
-		.time_index = 0.0
+	struct state state = {
+		.voices[0] = init_voice(),
+		.time_index = 0.0,
+		.vis_time_index = 0.0
 	};
 
-	struct juno_ui ui = init_ui();
+	struct ui ui = init_ui();
 	float last_frame_time = 0.0;
 
 	// Initialize PortAudio
@@ -70,23 +77,22 @@ main(void)
 
 	while (1) {
 		// Generate a waveform using the currently selected generator
-		float increment =
-			state.osc.frequency / SAMPLE_RATE * (BUFFER_SIZE / (float)(WINDOW_WIDTH - 2));
+		float vis_increment =
+			state.voices[0].osc.frequency / SAMPLE_RATE * (BUFFER_SIZE / (float)(WINDOW_WIDTH - 2));
 		// float waveform[BUFFER_SIZE];
 		for (int i = 0; i < BUFFER_SIZE; i++) {
-			state.waveform[i] = state.osc.generator(state.time_index);
-			state.time_index += increment;
-			// Keep the time_index in the range [0.0, 1.0) to ensure the waveform
+			state.vis_waveform[i] = state.voices[0].osc.generator(state.vis_time_index);
+			state.vis_time_index += vis_increment;
 			// loops correctly
-			if (state.time_index >= 1.0) {
-				state.time_index -= 1.0;
+			if (state.vis_time_index >= 1.0) {
+				state.vis_time_index -= 1.0;
 			}
 		}
 
 		// Find the maximum absolute value of the waveform
 		float max_val = 0.0;
 		for (int i = 0; i < BUFFER_SIZE; i++) {
-			float abs_val = fabs(state.waveform[i]);
+			float abs_val = fabs(state.vis_waveform[i]);
 			if (abs_val > max_val) {
 				max_val = abs_val;
 			}
@@ -101,38 +107,38 @@ main(void)
 
 		int c = getch();
 		if (c == 'j') {
-			prev_wave_gen(&state.osc);
+			prev_wave_gen(&state.voices[0].osc);
 		} else if (c == 'k') {
-			next_wave_gen(&state.osc);
+			next_wave_gen(&state.voices[0].osc);
 		} else if (c == 'h') { // Shift octave down
-			if (state.note > 11) {
-				state.note -= 12;
-				state.octave--;
+			if (state.voices[0].input.note > 11) {
+				state.voices[0].input.note -= 12;
+				state.voices[0].input.octave--;
 			}
 		} else if (c == 'l') { // Shift octave up
-			if (state.note < 75) {
-				state.note += 12;
-				state.octave++;
+			if (state.voices[0].input.note < 75) {
+				state.voices[0].input.note += 12;
+				state.voices[0].input.octave++;
 			}
 		} else {
 			const char *white_keys = "qwertyuiop";
 			const char *black_keys = "23 567 90";
 			const char *pos = strchr(white_keys, c);
 			if (pos) {
-				state.note = (pos - white_keys) + 4 + (12 * state.octave);
-				state.osc.frequency = note_frequency(state.note);
-				state.key_pressed = 1;
-				env_note_on(&state.env);
+				state.voices[0].input.note = (pos - white_keys) + 4 + (12 * state.voices[0].input.octave);
+				state.voices[0].osc.frequency = note_frequency(state.voices[0].input.note);
+				state.voices[0].input.key_pressed = 1;
+				env_note_on(&state.voices[0].env);
 			} else {
 				pos = strchr(black_keys, c);
 				if (pos) {
-					state.note = (pos - black_keys) + 5 + (12 * state.octave);
-					state.osc.frequency = note_frequency(state.note);
-					state.key_pressed = 1;
-					env_note_on(&state.env);
+					state.voices[0].input.note = (pos - black_keys) + 5 + (12 * state.voices[0].input.octave);
+					state.voices[0].osc.frequency = note_frequency(state.voices[0].input.note);
+					state.voices[0].input.key_pressed = 1;
+					env_note_on(&state.voices[0].env);
 				} else {
-					state.key_pressed = 0;
-					env_note_off(&state.env);
+					state.voices[0].input.key_pressed = 0;
+					env_note_off(&state.voices[0].env);
 				}
 			}
 		}

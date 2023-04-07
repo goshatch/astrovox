@@ -7,4 +7,6 @@ struct input {
 	int key_pressed;
 };
 
+struct input init_input(void);
+
 #endif

@@ -9,6 +9,7 @@ enum wave_types {
 };
 
 typedef float (*wave_gen)(float);
+// typedef float (*wave_gen)(float*, float);
 
 struct oscillator {
 	wave_gen generator;
@@ -17,9 +18,11 @@ struct oscillator {
 };
 
 struct oscillator init_osc(enum wave_types type, float frequency);
-float sine_wave_gen(float time);
-float sawtooth_wave_gen(float time);
-float square_wave_gen(float time);
+float sine_wave_gen(float phase);
+float sawtooth_wave_gen(float phase);
+float square_wave_gen(float phase);
+
+float generate_sample(wave_gen generator, float *phase, float increment);
 
 char *wave_name(enum wave_types type);
 

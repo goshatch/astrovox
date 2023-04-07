@@ -6,7 +6,7 @@
 #include "state.h"
 #include "ui.h"
 
-struct juno_ui
+struct ui
 init_ui(void)
 {
 	const float frame_duration = 1.0 / MAX_FPS;
@@ -23,24 +23,24 @@ init_ui(void)
 	wrefresh(win);
 	box(win, 0, 0); // Draw the box around the waveform window
 
-	struct juno_ui ui = {.win = win,
+	struct ui ui = {.win = win,
 		.frame_duration = frame_duration};
 	return ui;
 }
 
 void
-ui_tick(struct juno_ui *ui, struct juno_state *state, int waveform_len, float max_val)
+ui_tick(struct ui *ui, struct state *state, int waveform_len, float max_val)
 {
 	char note_name[4];
-	get_note_name(state->note, note_name);
+	get_note_name(state->voices[0].input.note, note_name);
 	werase(ui->win); // Clear the waveform window
-	plot_waveform(state->waveform, waveform_len, max_val, ui->win);
+	plot_waveform(state->vis_waveform, waveform_len, max_val, ui->win);
 	box(ui->win, 0, 0); // Draw the box around the waveform window
 
 	// Refresh the waveform window without updating the screen
 	wnoutrefresh(ui->win);
-	mvprintw(WINDOW_HEIGHT, 0, "OSC %s | %s | TIME %f", wave_name(state->osc.type), note_name, state->time_index);
-	mvprintw(WINDOW_HEIGHT + 1, 0, "DEBUG | env->state: %d, env->current_level: %f", state->env.state, state->env.current_level);
+	mvprintw(WINDOW_HEIGHT, 0, "OSC %s | %s | TIME %f", wave_name(state->voices[0].osc.type), note_name, state->time_index);
+	mvprintw(WINDOW_HEIGHT + 1, 0, "DEBUG | env->state: %d, env->current_level: %f", state->voices[0].env.state, state->voices[0].env.current_level);
 }
 
 void

@@ -1,21 +1,16 @@
 #ifndef STATE_H
 #define STATE_H
 
-#include "envelope.h"
-#include "input.h"
-#include "oscillator.h"
+#include "voice.h"
 
 #define BUFFER_SIZE 512
+#define NUM_VOICES 1
 
-struct juno_state {
-	struct oscillator osc;
-	struct envelope env;
-	struct input input;
-	int note;
-	int octave;
-	int key_pressed;
+struct state {
+	struct voice voices[NUM_VOICES];
 	float time_index;
-	float waveform[BUFFER_SIZE];
+	float vis_time_index;
+	float vis_waveform[BUFFER_SIZE];
 };
 
 #endif
