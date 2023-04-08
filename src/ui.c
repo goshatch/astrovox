@@ -18,6 +18,11 @@ init_ui(void)
 	cbreak();
 	nodelay(stdscr, TRUE);
 
+	if (has_colors()) {
+		start_color();
+		init_pair(1, COLOR_CYAN, COLOR_BLACK);  // Teal color pair
+	}
+
 	// Create window for displaying waveform
 	WINDOW *win = newwin(WINDOW_HEIGHT, WINDOW_WIDTH, 0, 0);
 	wrefresh(win);
@@ -31,19 +36,14 @@ init_ui(void)
 void
 ui_tick(struct ui *ui, struct state *state, int waveform_len, float max_val)
 {
-	char note_name[4];
-	get_note_name(state->voices[0].input.note, note_name);
 	werase(ui->win); // Clear the waveform window
 	plot_waveform(state->vis_waveform, waveform_len, max_val, ui->win);
 	box(ui->win, 0, 0); // Draw the box around the waveform window
 
 	// Refresh the waveform window without updating the screen
 	wnoutrefresh(ui->win);
-	mvprintw(WINDOW_HEIGHT, 0, "OSC %s | %s | TIME %f", wave_name(state->voices[0].osc.type), note_name, state->time_index);
-	mvprintw(WINDOW_HEIGHT + 1, 0, "ENV A%.2f D%.2f S%.2f R%.2f | state: %d, level: %.3f",
-			 state->voices[0].env.attack_time, state->voices[0].env.decay_time,
-			 state->voices[0].env.sustain_level, state->voices[0].env.release_time,
-			 state->voices[0].env.state, state->voices[0].env.current_level);
+	print_osc_status_line(state);
+	print_env_status_line(state);
 }
 
 void
@@ -115,4 +115,67 @@ get_note_name(int key_position, char *note_name)
 			midi_note % 12; // Calculate the note index within the octave
 		snprintf(note_name, 4, "%s%d", note_names[note_index], octave);
 	}
+}
+
+void
+print_osc_status_line(struct state *state)
+{
+	char note_name[4];
+	get_note_name(state->voices[0].input.note, note_name);
+
+	attron(A_BOLD);
+	mvprintw(WINDOW_HEIGHT, 0, "OSC");
+	attroff(A_BOLD);
+
+	attron(COLOR_PAIR(1));
+	printw(" %s", wave_name(state->voices[0].osc.type));
+	attroff(COLOR_PAIR(1));
+
+	printw(" | ");
+
+	attron(COLOR_PAIR(1));
+	printw("%s", note_name);
+	attroff(COLOR_PAIR(1));
+
+	printw(" | ");
+
+	attron(A_BOLD);
+	printw("TIME ");
+	attroff(A_BOLD);
+
+	attron(COLOR_PAIR(1));
+	printw("%f", state->time_index);
+	attroff(COLOR_PAIR(1));
+}
+
+void
+print_env_status_line(struct state *state)
+{
+	attron(A_BOLD);
+	mvprintw(WINDOW_HEIGHT + 1, 0, "ENV");
+	attroff(A_BOLD);
+
+	printw(" A");
+	attron(COLOR_PAIR(1));
+	printw("%.2f", state->voices[0].env.attack_time);
+	attroff(COLOR_PAIR(1));
+
+	printw(" D");
+	attron(COLOR_PAIR(1));
+	printw("%.2f", state->voices[0].env.decay_time);
+	attroff(COLOR_PAIR(1));
+
+	printw(" S");
+	attron(COLOR_PAIR(1));
+	printw("%.2f", state->voices[0].env.sustain_level);
+	attroff(COLOR_PAIR(1));
+
+	printw(" R");
+	attron(COLOR_PAIR(1));
+	printw("%.2f", state->voices[0].env.release_time);
+	attroff(COLOR_PAIR(1));
+
+	printw(" | state: %d, level: %.3f",
+		state->voices[0].env.state,
+		state->voices[0].env.current_level);
 }

@@ -37,13 +37,13 @@ wave_name(enum wave_types type)
 {
 	switch (type) {
 	case SINE_WAVE:
-		return "◠◡";
+		return "SINE";
 	case SAWTOOTH_WAVE:
-		return "⩘⩘";
+		return "SAW ";
 	case SQUARE_WAVE:
-		return "⨅_";
+		return "SQRE";
 	case PULSE_WAVE:
-		return "||";
+		return "PULS";
 	default:
 		return "Unknown";
 	}

@@ -21,5 +21,6 @@ struct ui init_ui(void);
 void ui_tick(struct ui *ui, struct state *state, int waveform_len, float max_val);
 void plot_waveform(float *waveform, int waveform_len, float max_val, WINDOW *win);
 void get_note_name(int key_position, char *note_name);
-
+void print_osc_status_line(struct state *state);
+void print_env_status_line(struct state *state);
 #endif
