@@ -1,28 +1,35 @@
 #include <math.h>
 #include "oscillator.h"
 
-wave_gen generators[] = {sine_wave_gen, sawtooth_wave_gen, square_wave_gen};
+wave_gen generators[] = {sine_wave_gen, sawtooth_wave_gen, square_wave_gen, pulse_wave_gen};
 
 // TODO: These formulas need to be confirmed!
 // Sine wave: y(t) = A * sin(2 * PI * f * t)
 float
 sine_wave_gen(float phase)
 {
-	return sinf(2.0 * M_PI * phase);
+	return sinf(2.0f * M_PI * phase);
 }
 
 // Sawtooth wave: y(t) = A * (2 * (f * t - floor(0.5 + f * t)))
 float
 sawtooth_wave_gen(float phase)
 {
-	return fmodf(phase, 1.0) * 2.0 - 1.0;
+	return fmodf(phase, 1.0f) * 2.0f - 1.0f;
 }
 
 // Square wave: y(t) = A * sign(sin(2 * PI * f * t))
 float
 square_wave_gen(float phase)
 {
-	return sinf(2.0 * M_PI * phase) >= 0 ? 1.0 : -1.0;
+	return sinf(2.0 * M_PI * phase) >= 0 ? 1.0f : -1.0f;
+}
+
+float
+pulse_wave_gen(float phase)
+{
+	float pulse_width = 0.2;
+	return (phase < pulse_width) ? 1.0f : -1.0f;
 }
 
 char *
@@ -35,6 +42,8 @@ wave_name(enum wave_types type)
 		return "⩘⩘";
 	case SQUARE_WAVE:
 		return "⨅_";
+	case PULSE_WAVE:
+		return "||";
 	default:
 		return "Unknown";
 	}

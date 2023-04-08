@@ -1,11 +1,12 @@
 #ifndef OSCILLATOR_H
 #define OSCILLATOR_H
 
-#define GEN_COUNT 3
+#define GEN_COUNT 4
 enum wave_types {
 	SINE_WAVE,
 	SAWTOOTH_WAVE,
-	SQUARE_WAVE
+	SQUARE_WAVE,
+	PULSE_WAVE
 };
 
 typedef float (*wave_gen)(float);
@@ -21,8 +22,7 @@ struct oscillator init_osc(enum wave_types type, float frequency);
 float sine_wave_gen(float phase);
 float sawtooth_wave_gen(float phase);
 float square_wave_gen(float phase);
-
-float generate_sample(wave_gen generator, float *phase, float increment);
+float pulse_wave_gen(float phase);
 
 char *wave_name(enum wave_types type);
 
