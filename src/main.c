@@ -7,6 +7,7 @@
 #include <string.h>
 #include <time.h>
 
+#include "envelope.h"
 #include "main.h"
 #include "oscillator.h"
 #include "ui.h"
@@ -26,13 +27,16 @@ audio_callback(const void *inputBuffer, void *outputBuffer, unsigned long frames
 
 	for (unsigned long i = 0; i < framesPerBuffer; i++) {
 		float sample = 0.0f;
-		if (state->voices[0].input.key_pressed) {
-			sample = state->voices[0].osc.generator(state->time_index);
-			state->time_index += increment;
-			if (state->time_index >= 1.0f) {
-				state->time_index -= 1.0f;
-			}
+
+		sample = state->voices[0].osc.generator(state->time_index);
+		state->time_index += increment;
+		if (state->time_index >= 1.0f) {
+			state->time_index -= 1.0f;
 		}
+
+		float env_value = env_process(&state->voices[0].env);
+		sample *= env_value;
+
 		*out++ = sample; // Left channel
 		*out++ = sample; // Right channel
 	}
@@ -120,6 +124,55 @@ main(void)
 				state.voices[0].input.note += 12;
 				state.voices[0].input.octave++;
 			}
+		} else if (c == 'z') {
+			// Decrease attack time
+			state.voices[0].env.attack_time -= 0.05f;
+			if (state.voices[0].env.attack_time < 0.0f) {
+				state.voices[0].env.attack_time = 0.0f;
+			}
+		} else if (c == 'x') {
+			// Increase attack time
+			state.voices[0].env.attack_time += 0.05f;
+			if (state.voices[0].env.attack_time > 1.0f) {
+				state.voices[0].env.attack_time = 1.0f;
+			}
+		} else if (c == 'c') {
+			// Decrease decay time
+			state.voices[0].env.decay_time -= 0.05f;
+			if (state.voices[0].env.decay_time < 0.0f) {
+				state.voices[0].env.decay_time = 0.0f;
+			}
+		} else if (c == 'v') {
+			// Increase decay time
+			state.voices[0].env.decay_time += 0.05f;
+			if (state.voices[0].env.decay_time > 1.0f) {
+				state.voices[0].env.decay_time = 1.0f;
+			}
+		} else if (c == 'b') {
+			// Decrease sustain level
+			state.voices[0].env.sustain_level -= 0.05f;
+			if (state.voices[0].env.sustain_level < 0.0f) {
+				state.voices[0].env.sustain_level = 0.0f;
+			}
+		} else if (c == 'n') {
+			// Increase sustain level
+			state.voices[0].env.sustain_level += 0.05f;
+			if (state.voices[0].env.sustain_level > 1.0f) {
+				state.voices[0].env.sustain_level = 1.0f;
+			}
+		} else if (c == 'm') {
+			// Decrease release time
+			state.voices[0].env.release_time -= 0.05f;
+			if (state.voices[0].env.release_time < 0.0f) {
+				state.voices[0].env.release_time = 0.0f;
+			}
+		} else if (c == ',') {
+			// Increase release time
+			state.voices[0].env.release_time += 0.05f;
+			if (state.voices[0].env.release_time > 1.0f) {
+				state.voices[0].env.release_time = 1.0f;
+			}
+
 		} else {
 			const char *white_keys = "qwertyuiop";
 			const char *black_keys = "23 567 90";
@@ -127,17 +180,14 @@ main(void)
 			if (pos) {
 				state.voices[0].input.note = (pos - white_keys) + 4 + (12 * state.voices[0].input.octave);
 				state.voices[0].osc.frequency = note_frequency(state.voices[0].input.note);
-				state.voices[0].input.key_pressed = 1;
 				env_note_on(&state.voices[0].env);
 			} else {
 				pos = strchr(black_keys, c);
 				if (pos) {
 					state.voices[0].input.note = (pos - black_keys) + 5 + (12 * state.voices[0].input.octave);
 					state.voices[0].osc.frequency = note_frequency(state.voices[0].input.note);
-					state.voices[0].input.key_pressed = 1;
 					env_note_on(&state.voices[0].env);
 				} else {
-					state.voices[0].input.key_pressed = 0;
 					env_note_off(&state.voices[0].env);
 				}
 			}

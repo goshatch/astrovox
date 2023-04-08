@@ -40,7 +40,10 @@ ui_tick(struct ui *ui, struct state *state, int waveform_len, float max_val)
 	// Refresh the waveform window without updating the screen
 	wnoutrefresh(ui->win);
 	mvprintw(WINDOW_HEIGHT, 0, "OSC %s | %s | TIME %f", wave_name(state->voices[0].osc.type), note_name, state->time_index);
-	mvprintw(WINDOW_HEIGHT + 1, 0, "DEBUG | env->state: %d, env->current_level: %f", state->voices[0].env.state, state->voices[0].env.current_level);
+	mvprintw(WINDOW_HEIGHT + 1, 0, "ENV A%.2f D%.2f S%.2f R%.2f | state: %d, level: %.3f",
+			 state->voices[0].env.attack_time, state->voices[0].env.decay_time,
+			 state->voices[0].env.sustain_level, state->voices[0].env.release_time,
+			 state->voices[0].env.state, state->voices[0].env.current_level);
 }
 
 void

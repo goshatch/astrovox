@@ -19,8 +19,9 @@ init_env(float attack_time, float decay_time, float sustain_level, float release
 void
 env_note_on(struct envelope *env)
 {
-	env->state = ATTACK;
+	env->state = OFF;
 	env->time = 0.0f;
+	env->state = ATTACK;
 }
 
 void
@@ -38,7 +39,7 @@ env_process(struct envelope *env)
 	switch (env->state) {
 	case ATTACK:
 		env->current_level += dt / env->attack_time;
-		if (env->current_level <= 1.0f) {
+		if (env->current_level >= 1.0f) {
 			env->current_level = 1.0f;
 			env->state = DECAY;
 		}
