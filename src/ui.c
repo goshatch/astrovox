@@ -43,6 +43,7 @@ ui_tick(struct ui *ui, struct state *state, int waveform_len, float max_val)
 	// Refresh the waveform window without updating the screen
 	wnoutrefresh(ui->win);
 	print_osc_status_line(state);
+	print_filter_status_line(state);
 	print_env_status_line(state);
 }
 
@@ -124,7 +125,7 @@ print_osc_status_line(struct state *state)
 	get_note_name(state->voices[0].input.note, note_name);
 
 	attron(A_BOLD);
-	mvprintw(WINDOW_HEIGHT, 0, "OSC");
+	mvprintw(WINDOW_HEIGHT, 0, "VOICE1\t| OSC");
 	attroff(A_BOLD);
 
 	attron(COLOR_PAIR(1));
@@ -152,7 +153,7 @@ void
 print_env_status_line(struct state *state)
 {
 	attron(A_BOLD);
-	mvprintw(WINDOW_HEIGHT + 1, 0, "ENV");
+	mvprintw(WINDOW_HEIGHT + 2, 0, "\t| ENV");
 	attroff(A_BOLD);
 
 	printw(" A");
@@ -178,4 +179,23 @@ print_env_status_line(struct state *state)
 	printw(" | state: %d, level: %.3f",
 		state->voices[0].env.state,
 		state->voices[0].env.current_level);
+}
+
+void
+print_filter_status_line(struct state *state)
+{
+	attron(A_BOLD);
+	mvprintw(WINDOW_HEIGHT + 1, 0, "\t| LOPASSF");
+	attroff(A_BOLD);
+
+	printw(" CUTOFF");
+	attron(COLOR_PAIR(1));
+	printw("%.2f", state->voices[0].filter.cutoff);
+	attroff(COLOR_PAIR(1));
+	printw("Hz");
+
+	printw(" RES Q");
+	attron(COLOR_PAIR(1));
+	printw("%.2f", state->voices[0].filter.resonance);
+	attroff(COLOR_PAIR(1));
 }

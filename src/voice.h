@@ -2,6 +2,7 @@
 #define VOICE_H
 
 #include "envelope.h"
+#include "filter.h"
 #include "input.h"
 #include "oscillator.h"
 
@@ -9,7 +10,7 @@ struct voice {
 	struct oscillator osc;
 	struct envelope env;
 	struct input input;
-	// TODO: struct filter fiter;
+	struct low_pass_filter filter;
 };
 
 struct voice init_voice(void);

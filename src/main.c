@@ -8,10 +8,11 @@
 #include <time.h>
 
 #include "envelope.h"
+#include "filter.h"
 #include "main.h"
 #include "oscillator.h"
-#include "ui.h"
 #include "state.h"
+#include "ui.h"
 
 static int
 audio_callback(const void *inputBuffer, void *outputBuffer, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData)
@@ -36,6 +37,7 @@ audio_callback(const void *inputBuffer, void *outputBuffer, unsigned long frames
 
 		float env_value = env_process(&state->voices[0].env);
 		sample *= env_value;
+		sample = low_pass_filter_process(&state->voices[0].filter, sample);
 
 		*out++ = sample; // Left channel
 		*out++ = sample; // Right channel
@@ -172,7 +174,22 @@ main(void)
 			if (state.voices[0].env.release_time > 1.0f) {
 				state.voices[0].env.release_time = 1.0f;
 			}
-
+		} else if (c == 'a') {
+			// Decrease cutoff frequency of low pass filter
+			float cutoff = state.voices[0].filter.cutoff - 100.0f;
+			low_pass_filter_set_cutoff(&state.voices[0].filter, cutoff);
+		} else if (c == 's') {
+			// Increase cutoff frequency of low pass filter
+			float cutoff = state.voices[0].filter.cutoff + 100.0f;
+			low_pass_filter_set_cutoff(&state.voices[0].filter, cutoff);
+		} else if (c == 'd') {
+			// Decrease resonance of low pass filter
+			float resonance = state.voices[0].filter.resonance - 0.1f;
+			low_pass_filter_set_resonance(&state.voices[0].filter, resonance);
+		} else if (c == 'f') {
+			// Increase resonance of low pass filter
+			float resonance = state.voices[0].filter.resonance + 0.1f;
+			low_pass_filter_set_resonance(&state.voices[0].filter, resonance);
 		} else {
 			const char *white_keys = "qwertyuiop";
 			const char *black_keys = "23 567 90";
