@@ -6,10 +6,15 @@
 #include "input.h"
 #include "oscillator.h"
 
+struct note {
+	int value;
+	int octave;
+};
+
 struct voice {
 	struct oscillator osc;
 	struct envelope env;
-	struct input input;
+	struct note note;
 	struct low_pass_filter filter;
 };
 

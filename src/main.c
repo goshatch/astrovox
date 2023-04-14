@@ -1,6 +1,7 @@
 #include <math.h>
 #include <ncurses.h>
 #include <portaudio.h>
+#include <portmidi.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +10,7 @@
 
 #include "envelope.h"
 #include "filter.h"
+#include "input.h"
 #include "main.h"
 #include "oscillator.h"
 #include "state.h"
@@ -23,7 +25,7 @@ audio_callback(const void *inputBuffer, void *outputBuffer, unsigned long frames
 	(void)timeInfo;
 	(void)statusFlags;
 
-	float frequency = note_frequency(state->voices[0].input.note);
+	float frequency = note_frequency(state->voices[0].note.value);
 	float increment = frequency / SAMPLE_RATE;
 
 	for (unsigned long i = 0; i < framesPerBuffer; i++) {
@@ -61,23 +63,23 @@ main(void)
 	float last_frame_time = 0.0;
 
 	// Initialize PortAudio
-	PaError err = Pa_Initialize();
-	if (err != paNoError) {
-		fprintf(stderr, "PortAudio error: %s\n", Pa_GetErrorText(err));
+	PaError a_err= Pa_Initialize();
+	if (a_err != paNoError) {
+		fprintf(stderr, "PortAudio error: %s\n", Pa_GetErrorText(a_err));
 		return 1;
 	}
 
 	// Open audio stream
 	PaStream *stream;
-	err = Pa_OpenDefaultStream(&stream, 0, 2, paFloat32, SAMPLE_RATE, paFramesPerBufferUnspecified, audio_callback, &state);
-	if (err != paNoError) {
-		fprintf(stderr, "PortAudio error: %s\n", Pa_GetErrorText(err));
+	a_err= Pa_OpenDefaultStream(&stream, 0, 2, paFloat32, SAMPLE_RATE, paFramesPerBufferUnspecified, audio_callback, &state);
+	if (a_err != paNoError) {
+		fprintf(stderr, "PortAudio error: %s\n", Pa_GetErrorText(a_err));
 		return 1;
 	}
 
-	err = Pa_StartStream(stream);
-	if (err != paNoError) {
-		fprintf(stderr, "PortAudio error: %s\n", Pa_GetErrorText(err));
+	a_err= Pa_StartStream(stream);
+	if (a_err != paNoError) {
+		fprintf(stderr, "PortAudio error: %s\n", Pa_GetErrorText(a_err));
 		return 1;
 	}
 
@@ -117,14 +119,14 @@ main(void)
 		} else if (c == 'k') {
 			next_wave_gen(&state.voices[0].osc);
 		} else if (c == 'h') { // Shift octave down
-			if (state.voices[0].input.note > 11) {
-				state.voices[0].input.note -= 12;
-				state.voices[0].input.octave--;
+			if (state.voices[0].note.value > 11) {
+				state.voices[0].note.value -= 12;
+				state.voices[0].note.octave--;
 			}
 		} else if (c == 'l') { // Shift octave up
-			if (state.voices[0].input.note < 75) {
-				state.voices[0].input.note += 12;
-				state.voices[0].input.octave++;
+			if (state.voices[0].note.value < 75) {
+				state.voices[0].note.value += 12;
+				state.voices[0].note.octave++;
 			}
 		} else if (c == 'z') {
 			// Decrease attack time
@@ -195,14 +197,14 @@ main(void)
 			const char *black_keys = "23 567 90";
 			const char *pos = strchr(white_keys, c);
 			if (pos) {
-				state.voices[0].input.note = (pos - white_keys) + 4 + (12 * state.voices[0].input.octave);
-				state.voices[0].osc.frequency = note_frequency(state.voices[0].input.note);
+				state.voices[0].note.value = (pos - white_keys) + 4 + (12 * state.voices[0].note.octave);
+				state.voices[0].osc.frequency = note_frequency(state.voices[0].note.value);
 				env_note_on(&state.voices[0].env);
 			} else {
 				pos = strchr(black_keys, c);
 				if (pos) {
-					state.voices[0].input.note = (pos - black_keys) + 5 + (12 * state.voices[0].input.octave);
-					state.voices[0].osc.frequency = note_frequency(state.voices[0].input.note);
+					state.voices[0].note.value = (pos - black_keys) + 5 + (12 * state.voices[0].note.octave);
+					state.voices[0].osc.frequency = note_frequency(state.voices[0].note.value);
 					env_note_on(&state.voices[0].env);
 				} else {
 					env_note_off(&state.voices[0].env);
@@ -211,17 +213,20 @@ main(void)
 		}
 	}
 
-	err = Pa_StopStream(stream);
-	if (err != paNoError) {
-		fprintf(stderr, "PortAudio error: %s\n", Pa_GetErrorText(err));
+	a_err = Pa_StopStream(stream);
+	if (a_err != paNoError) {
+		fprintf(stderr, "PortAudio error: %s\n", Pa_GetErrorText(a_err));
 	}
 
-	err = Pa_CloseStream(stream);
-	if (err != paNoError) {
-		fprintf(stderr, "PortAudio error: %s\n", Pa_GetErrorText(err));
+	a_err = Pa_CloseStream(stream);
+	if (a_err != paNoError) {
+		fprintf(stderr, "PortAudio error: %s\n", Pa_GetErrorText(a_err));
 	}
 
 	Pa_Terminate();
+
+	teardown_midi();
+
 	endwin();
 	return 0;
 }

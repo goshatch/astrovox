@@ -122,7 +122,7 @@ void
 print_osc_status_line(struct state *state)
 {
 	char note_name[4];
-	get_note_name(state->voices[0].input.note, note_name);
+	get_note_name(state->voices[0].note.value, note_name);
 
 	attron(A_BOLD);
 	mvprintw(WINDOW_HEIGHT, 0, "VOICE1\t| OSC");

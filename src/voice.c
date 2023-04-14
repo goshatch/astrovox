@@ -9,7 +9,7 @@ init_voice(void)
 		.osc = init_osc(SAWTOOTH_WAVE, 0.0f),
 		.env = init_env(0.1f, 0.1f, 0.8f, 0.5f, SAMPLE_RATE),
 		.filter = init_low_pass_filter(44100.0f, 1000.0f, 0.5f),
-		.input = init_input()
+		.note = { .value = -1, .octave = 3 }
 	};
 
 	return voice;
