@@ -45,6 +45,7 @@ ui_tick(struct ui *ui, struct state *state, int waveform_len, float max_val)
 	print_osc_status_line(state);
 	print_filter_status_line(state);
 	print_env_status_line(state);
+	print_midi_status_line(state);
 }
 
 void
@@ -116,6 +117,18 @@ get_note_name(int key_position, char *note_name)
 			midi_note % 12; // Calculate the note index within the octave
 		snprintf(note_name, 4, "%s%d", note_names[note_index], octave);
 	}
+}
+
+void
+print_midi_status_line(struct state *state)
+{
+	attron(A_BOLD);
+	mvprintw(WINDOW_HEIGHT + 3, 0, "\t| MIDI");
+	attroff(A_BOLD);
+
+	attron(COLOR_PAIR(1));
+	printw(" %d: %s %s", state->input.midi_device_id, state->input.selected_midi_device_info->interf, state->input.selected_midi_device_info->name);
+	attroff(COLOR_PAIR(1));
 }
 
 void

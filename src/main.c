@@ -16,6 +16,9 @@
 #include "state.h"
 #include "ui.h"
 
+/* NOTE: Debug purposes. Undefining this will not show the user interface. */
+#define DEBUG_SHOW_UI TRUE
+
 static int
 audio_callback(const void *inputBuffer, void *outputBuffer, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData)
 {
@@ -55,12 +58,15 @@ main(void)
 
 	struct state state = {
 		.voices[0] = init_voice(),
+		.input = init_input(),
 		.time_index = 0.0,
 		.vis_time_index = 0.0
 	};
 
+	#ifdef DEBUG_SHOW_UI
 	struct ui ui = init_ui();
 	float last_frame_time = 0.0;
+	#endif
 
 	// Initialize PortAudio
 	PaError a_err= Pa_Initialize();
@@ -106,12 +112,39 @@ main(void)
 			}
 		}
 
+		#ifdef DEBUG_SHOW_UI
 		// Display the waveform if it's time to redraw
 		float current_time = (float)clock() / CLOCKS_PER_SEC;
 		if (current_time - last_frame_time < ui.frame_duration) { continue; }
 		last_frame_time = current_time;
 
 		ui_tick(&ui, &state, BUFFER_SIZE, max_val);
+		#endif
+
+		// Handle MIDI input
+		PmEvent buffer[256];
+		int num_events;
+
+		while (Pm_Poll(state.input.midi_stream)) {
+			num_events = Pm_Read(state.input.midi_stream, buffer, 256);
+			for (int i = 0; i < num_events; i++) {
+				int status = Pm_MessageStatus(buffer[i].message);
+				int data1 = Pm_MessageData1(buffer[i].message);
+				int data2 = Pm_MessageData2(buffer[i].message);
+
+				if (status == (0x90 | (0x0F & MIDI_CHANNEL))) { // Note On event
+					if (data2 > 0) {
+						state.voices[0].note.value = data1;
+						state.voices[0].osc.frequency = note_frequency(state.voices[0].note.value);
+						env_note_on(&state.voices[0].env);
+					} else {
+						env_note_off(&state.voices[0].env);
+					}
+				} else if (status == ((0x80 | (0x0F & MIDI_CHANNEL)))) { // Note Off event
+					env_note_off(&state.voices[0].env);
+				}
+			}
+		}
 
 		int c = getch();
 		if (c == 'j') {
@@ -206,8 +239,10 @@ main(void)
 					state.voices[0].note.value = (pos - black_keys) + 5 + (12 * state.voices[0].note.octave);
 					state.voices[0].osc.frequency = note_frequency(state.voices[0].note.value);
 					env_note_on(&state.voices[0].env);
-				} else {
-					env_note_off(&state.voices[0].env);
+				/* TODO: Somehow handle note off event when playing on keyboard */
+				/* } else { */
+				/* 	printf("Note off in keyboard!\n"); */
+				/* 	env_note_off(&state.voices[0].env); */
 				}
 			}
 		}
@@ -227,7 +262,10 @@ main(void)
 
 	teardown_midi();
 
+	#ifdef DEBUG_SHOW_UI
 	endwin();
+	#endif
+
 	return 0;
 }
 

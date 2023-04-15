@@ -24,4 +24,5 @@ void get_note_name(int key_position, char *note_name);
 void print_osc_status_line(struct state *state);
 void print_env_status_line(struct state *state);
 void print_filter_status_line(struct state *state);
+void print_midi_status_line(struct state *state);
 #endif

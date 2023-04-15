@@ -19,7 +19,6 @@ init_env(float attack_time, float decay_time, float sustain_level, float release
 void
 env_note_on(struct envelope *env)
 {
-	env->state = OFF;
 	env->time = 0.0f;
 	env->state = ATTACK;
 }
