@@ -103,16 +103,16 @@ plot_waveform(float *waveform, int waveform_len, float max_val, WINDOW *win)
 	doupdate();
 }
 
-const char *note_names[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
-
 void
 get_note_name(int key_position, char *note_name)
 {
+	const char *note_names[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+
 	if (key_position == -1) {
 		snprintf(note_name, 4, "-");
 	} else {
-		int midi_note = key_position + 20; // Calculate the MIDI note number
-		int octave = midi_note / 12 - 1;   // Find the octave number
+		int midi_note = key_position + 12; // Calculate the MIDI note number
+		int octave = midi_note / 12 - 2;   // Find the octave number
 		int note_index =
 			midi_note % 12; // Calculate the note index within the octave
 		snprintf(note_name, 4, "%s%d", note_names[note_index], octave);
