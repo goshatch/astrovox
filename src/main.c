@@ -16,8 +16,9 @@
 #include "state.h"
 #include "ui.h"
 
-/* NOTE: Debug purposes. Undefining this will not show the user interface. */
-#define DEBUG_SHOW_UI TRUE
+// NOTE Uncommenting this will hide the user interface, which can be helpful for
+// debugging with printfs
+// #define DEBUG_HIDE_UI TRUE
 
 static int
 audio_callback(const void *inputBuffer, void *outputBuffer, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData)
@@ -63,7 +64,7 @@ main(void)
 		.vis_time_index = 0.0
 	};
 
-	#ifdef DEBUG_SHOW_UI
+	#ifndef DEBUG_HIDE_UI
 	struct ui ui = init_ui();
 	float last_frame_time = 0.0;
 	#endif
@@ -93,11 +94,9 @@ main(void)
 		// Generate a waveform using the currently selected generator
 		float vis_increment =
 			state.voices[0].osc.frequency / SAMPLE_RATE * (BUFFER_SIZE / (float)(WINDOW_WIDTH - 2));
-		// float waveform[BUFFER_SIZE];
 		for (int i = 0; i < BUFFER_SIZE; i++) {
 			state.vis_waveform[i] = state.voices[0].osc.generator(state.vis_time_index);
 			state.vis_time_index += vis_increment;
-			// loops correctly
 			if (state.vis_time_index >= 1.0) {
 				state.vis_time_index -= 1.0;
 			}
@@ -112,7 +111,7 @@ main(void)
 			}
 		}
 
-		#ifdef DEBUG_SHOW_UI
+		#ifndef DEBUG_HIDE_UI
 		// Display the waveform if it's time to redraw
 		float current_time = (float)clock() / CLOCKS_PER_SEC;
 		if (current_time - last_frame_time < ui.frame_duration) { continue; }
@@ -147,7 +146,9 @@ main(void)
 		}
 
 		int c = getch();
-		if (c == 'j') {
+		if (c == 'q') {
+			break;
+		} else if (c == 'j') {
 			prev_wave_gen(&state.voices[0].osc);
 		} else if (c == 'k') {
 			next_wave_gen(&state.voices[0].osc);
@@ -225,26 +226,6 @@ main(void)
 			// Increase resonance of low pass filter
 			float resonance = state.voices[0].filter.resonance + 0.1f;
 			low_pass_filter_set_resonance(&state.voices[0].filter, resonance);
-		} else {
-			const char *white_keys = "qwertyuiop";
-			const char *black_keys = "23 567 90";
-			const char *pos = strchr(white_keys, c);
-			if (pos) {
-				state.voices[0].note.value = (pos - white_keys) + 4 + (12 * state.voices[0].note.octave);
-				state.voices[0].osc.frequency = note_frequency(state.voices[0].note.value);
-				env_note_on(&state.voices[0].env);
-			} else {
-				pos = strchr(black_keys, c);
-				if (pos) {
-					state.voices[0].note.value = (pos - black_keys) + 5 + (12 * state.voices[0].note.octave);
-					state.voices[0].osc.frequency = note_frequency(state.voices[0].note.value);
-					env_note_on(&state.voices[0].env);
-				/* TODO: Somehow handle note off event when playing on keyboard */
-				/* } else { */
-				/* 	printf("Note off in keyboard!\n"); */
-				/* 	env_note_off(&state.voices[0].env); */
-				}
-			}
 		}
 	}
 
@@ -262,10 +243,11 @@ main(void)
 
 	teardown_midi();
 
-	#ifdef DEBUG_SHOW_UI
+	#ifndef DEBUG_HIDE_UI
 	endwin();
 	#endif
 
+	printf("Exiting.\n");
 	return 0;
 }
 
