@@ -1,3 +1,4 @@
+#include <ev.h>
 #include <math.h>
 #include <ncurses.h>
 #include <portaudio.h>
@@ -52,22 +53,188 @@ audio_callback(const void *inputBuffer, void *outputBuffer, unsigned long frames
 	return paContinue;
 }
 
+static void
+ui_timer_cb(EV_P_ struct stateful_watcher *w, int revents)
+{
+	struct state *state = w->state;
+	// Generate a waveform using the currently selected generator
+	float vis_increment =
+		state->voices[0].osc.frequency / SAMPLE_RATE * (BUFFER_SIZE / (float)(WINDOW_WIDTH - 2));
+	for (int i = 0; i < BUFFER_SIZE; i++) {
+		state->vis_waveform[i] = state->voices[0].osc.generator(state->vis_time_index);
+		state->vis_time_index += vis_increment;
+		if (state->vis_time_index >= 1.0) {
+			state->vis_time_index -= 1.0;
+		}
+	}
+
+	// Find the maximum absolute value of the waveform
+	float max_val = 0.0;
+	for (int i = 0; i < BUFFER_SIZE; i++) {
+		float abs_val = fabs(state->vis_waveform[i]);
+		if (abs_val > max_val) {
+			max_val = abs_val;
+		}
+	}
+
+	#ifndef DEBUG_HIDE_UI
+	// Display the waveform if it's time to redraw
+	ui_tick(state, BUFFER_SIZE, max_val);
+	#endif
+}
+
+static void
+keyboard_cb(EV_P_ struct stateful_watcher *w, int revents)
+{
+	struct state *state = w->state;
+	// Keyboard input callback
+
+	int c = getch();
+	if (c == 'q') {
+		exit(1);
+	} else if (c == 'j') {
+		prev_wave_gen(&state->voices[0].osc);
+	} else if (c == 'k') {
+		next_wave_gen(&state->voices[0].osc);
+	} else if (c == 'h') { // Shift octave down
+		if (state->voices[0].note.value > 11) {
+			state->voices[0].note.value -= 12;
+			state->voices[0].note.octave--;
+		}
+	} else if (c == 'l') { // Shift octave up
+		if (state->voices[0].note.value < 75) {
+			state->voices[0].note.value += 12;
+			state->voices[0].note.octave++;
+		}
+	} else if (c == 'z') {
+		// Decrease attack time
+		state->voices[0].env.attack_time -= 0.05f;
+		if (state->voices[0].env.attack_time < 0.0f) {
+			state->voices[0].env.attack_time = 0.0f;
+		}
+	} else if (c == 'x') {
+		// Increase attack time
+		state->voices[0].env.attack_time += 0.05f;
+		if (state->voices[0].env.attack_time > 1.0f) {
+			state->voices[0].env.attack_time = 1.0f;
+		}
+	} else if (c == 'c') {
+		// Decrease decay time
+		state->voices[0].env.decay_time -= 0.05f;
+		if (state->voices[0].env.decay_time < 0.0f) {
+			state->voices[0].env.decay_time = 0.0f;
+		}
+	} else if (c == 'v') {
+		// Increase decay time
+		state->voices[0].env.decay_time += 0.05f;
+		if (state->voices[0].env.decay_time > 1.0f) {
+			state->voices[0].env.decay_time = 1.0f;
+		}
+	} else if (c == 'b') {
+		// Decrease sustain level
+		state->voices[0].env.sustain_level -= 0.05f;
+		if (state->voices[0].env.sustain_level < 0.0f) {
+			state->voices[0].env.sustain_level = 0.0f;
+		}
+	} else if (c == 'n') {
+		// Increase sustain level
+		state->voices[0].env.sustain_level += 0.05f;
+		if (state->voices[0].env.sustain_level > 1.0f) {
+			state->voices[0].env.sustain_level = 1.0f;
+		}
+	} else if (c == 'm') {
+		// Decrease release time
+		state->voices[0].env.release_time -= 0.05f;
+		if (state->voices[0].env.release_time < 0.0f) {
+			state->voices[0].env.release_time = 0.0f;
+		}
+	} else if (c == ',') {
+		// Increase release time
+		state->voices[0].env.release_time += 0.05f;
+		if (state->voices[0].env.release_time > 1.0f) {
+			state->voices[0].env.release_time = 1.0f;
+		}
+	} else if (c == 'a') {
+		// Decrease cutoff frequency of low pass filter
+		float cutoff = state->voices[0].filter.cutoff - 100.0f;
+		low_pass_filter_set_cutoff(&state->voices[0].filter, cutoff);
+	} else if (c == 's') {
+		// Increase cutoff frequency of low pass filter
+		float cutoff = state->voices[0].filter.cutoff + 100.0f;
+		low_pass_filter_set_cutoff(&state->voices[0].filter, cutoff);
+	} else if (c == 'd') {
+		// Decrease resonance of low pass filter
+		float resonance = state->voices[0].filter.resonance - 0.1f;
+		low_pass_filter_set_resonance(&state->voices[0].filter, resonance);
+	} else if (c == 'f') {
+		// Increase resonance of low pass filter
+		float resonance = state->voices[0].filter.resonance + 0.1f;
+		low_pass_filter_set_resonance(&state->voices[0].filter, resonance);
+	}
+}
+
+static void
+midi_cb(EV_P_ struct stateful_watcher *w, int revents)
+{
+	struct state *state = w->state;
+	// Handle MIDI input
+	PmEvent buffer[256];
+	int num_events;
+
+	while (Pm_Poll(state->input.midi_stream)) {
+		num_events = Pm_Read(state->input.midi_stream, buffer, 256);
+		for (int i = 0; i < num_events; i++) {
+			int status = Pm_MessageStatus(buffer[i].message);
+			int data1 = Pm_MessageData1(buffer[i].message);
+			int data2 = Pm_MessageData2(buffer[i].message);
+
+			if (status == (0x90 | (0x0F & MIDI_CHANNEL))) { // Note On event
+				if (data2 > 0) {
+					state->voices[0].note.value = data1;
+					state->voices[0].osc.frequency = note_frequency(state->voices[0].note.value);
+					env_note_on(&state->voices[0].env);
+				} else {
+					env_note_off(&state->voices[0].env);
+				}
+			} else if (status == ((0x80 | (0x0F & MIDI_CHANNEL)))) { // Note Off event
+				env_note_off(&state->voices[0].env);
+			}
+		}
+	}
+}
+
 int
 main(void)
 {
+	struct ev_loop *loop = EV_DEFAULT;
+
 	signal(SIGINT, sigint_handler);
 
 	struct state state = {
 		.voices[0] = init_voice(),
 		.input = init_input(),
+		#ifndef DEBUG_HIDE_UI
+		.ui = init_ui(),
+		#endif
 		.time_index = 0.0,
 		.vis_time_index = 0.0
 	};
 
-	#ifndef DEBUG_HIDE_UI
-	struct ui ui = init_ui();
-	float last_frame_time = 0.0;
-	#endif
+	// Timer for UI updates
+	struct stateful_watcher ui_watcher;
+	ui_watcher.state = &state;
+	ev_timer_init((ev_timer *)&ui_watcher.watcher, (void *)ui_timer_cb, 0., 1./24);
+	ev_timer_start(loop, (ev_timer *)&ui_watcher.watcher);
+
+	// I/O watcher for keyboard input
+	struct stateful_watcher keyboard_watcher;
+	ev_io_init((ev_io *)&keyboard_watcher.watcher, (void *)keyboard_cb, fileno(stdin), EV_READ);
+	ev_io_start(loop, (ev_io *)&keyboard_watcher.watcher);
+
+	// Custom watcher for MIDI input
+	struct stateful_watcher midi_watcher;
+	ev_check_init((ev_check *)&midi_watcher, (void *)midi_cb);
+	ev_check_start(loop, (ev_check *)&midi_watcher.watcher);
 
 	// Initialize PortAudio
 	PaError a_err= Pa_Initialize();
@@ -90,144 +257,8 @@ main(void)
 		return 1;
 	}
 
-	while (1) {
-		// Generate a waveform using the currently selected generator
-		float vis_increment =
-			state.voices[0].osc.frequency / SAMPLE_RATE * (BUFFER_SIZE / (float)(WINDOW_WIDTH - 2));
-		for (int i = 0; i < BUFFER_SIZE; i++) {
-			state.vis_waveform[i] = state.voices[0].osc.generator(state.vis_time_index);
-			state.vis_time_index += vis_increment;
-			if (state.vis_time_index >= 1.0) {
-				state.vis_time_index -= 1.0;
-			}
-		}
-
-		// Find the maximum absolute value of the waveform
-		float max_val = 0.0;
-		for (int i = 0; i < BUFFER_SIZE; i++) {
-			float abs_val = fabs(state.vis_waveform[i]);
-			if (abs_val > max_val) {
-				max_val = abs_val;
-			}
-		}
-
-		#ifndef DEBUG_HIDE_UI
-		// Display the waveform if it's time to redraw
-		float current_time = (float)clock() / CLOCKS_PER_SEC;
-		if (current_time - last_frame_time < ui.frame_duration) { continue; }
-		last_frame_time = current_time;
-
-		ui_tick(&ui, &state, BUFFER_SIZE, max_val);
-		#endif
-
-		// Handle MIDI input
-		PmEvent buffer[256];
-		int num_events;
-
-		while (Pm_Poll(state.input.midi_stream)) {
-			num_events = Pm_Read(state.input.midi_stream, buffer, 256);
-			for (int i = 0; i < num_events; i++) {
-				int status = Pm_MessageStatus(buffer[i].message);
-				int data1 = Pm_MessageData1(buffer[i].message);
-				int data2 = Pm_MessageData2(buffer[i].message);
-
-				if (status == (0x90 | (0x0F & MIDI_CHANNEL))) { // Note On event
-					if (data2 > 0) {
-						state.voices[0].note.value = data1;
-						state.voices[0].osc.frequency = note_frequency(state.voices[0].note.value);
-						env_note_on(&state.voices[0].env);
-					} else {
-						env_note_off(&state.voices[0].env);
-					}
-				} else if (status == ((0x80 | (0x0F & MIDI_CHANNEL)))) { // Note Off event
-					env_note_off(&state.voices[0].env);
-				}
-			}
-		}
-
-		int c = getch();
-		if (c == 'q') {
-			break;
-		} else if (c == 'j') {
-			prev_wave_gen(&state.voices[0].osc);
-		} else if (c == 'k') {
-			next_wave_gen(&state.voices[0].osc);
-		} else if (c == 'h') { // Shift octave down
-			if (state.voices[0].note.value > 11) {
-				state.voices[0].note.value -= 12;
-				state.voices[0].note.octave--;
-			}
-		} else if (c == 'l') { // Shift octave up
-			if (state.voices[0].note.value < 75) {
-				state.voices[0].note.value += 12;
-				state.voices[0].note.octave++;
-			}
-		} else if (c == 'z') {
-			// Decrease attack time
-			state.voices[0].env.attack_time -= 0.05f;
-			if (state.voices[0].env.attack_time < 0.0f) {
-				state.voices[0].env.attack_time = 0.0f;
-			}
-		} else if (c == 'x') {
-			// Increase attack time
-			state.voices[0].env.attack_time += 0.05f;
-			if (state.voices[0].env.attack_time > 1.0f) {
-				state.voices[0].env.attack_time = 1.0f;
-			}
-		} else if (c == 'c') {
-			// Decrease decay time
-			state.voices[0].env.decay_time -= 0.05f;
-			if (state.voices[0].env.decay_time < 0.0f) {
-				state.voices[0].env.decay_time = 0.0f;
-			}
-		} else if (c == 'v') {
-			// Increase decay time
-			state.voices[0].env.decay_time += 0.05f;
-			if (state.voices[0].env.decay_time > 1.0f) {
-				state.voices[0].env.decay_time = 1.0f;
-			}
-		} else if (c == 'b') {
-			// Decrease sustain level
-			state.voices[0].env.sustain_level -= 0.05f;
-			if (state.voices[0].env.sustain_level < 0.0f) {
-				state.voices[0].env.sustain_level = 0.0f;
-			}
-		} else if (c == 'n') {
-			// Increase sustain level
-			state.voices[0].env.sustain_level += 0.05f;
-			if (state.voices[0].env.sustain_level > 1.0f) {
-				state.voices[0].env.sustain_level = 1.0f;
-			}
-		} else if (c == 'm') {
-			// Decrease release time
-			state.voices[0].env.release_time -= 0.05f;
-			if (state.voices[0].env.release_time < 0.0f) {
-				state.voices[0].env.release_time = 0.0f;
-			}
-		} else if (c == ',') {
-			// Increase release time
-			state.voices[0].env.release_time += 0.05f;
-			if (state.voices[0].env.release_time > 1.0f) {
-				state.voices[0].env.release_time = 1.0f;
-			}
-		} else if (c == 'a') {
-			// Decrease cutoff frequency of low pass filter
-			float cutoff = state.voices[0].filter.cutoff - 100.0f;
-			low_pass_filter_set_cutoff(&state.voices[0].filter, cutoff);
-		} else if (c == 's') {
-			// Increase cutoff frequency of low pass filter
-			float cutoff = state.voices[0].filter.cutoff + 100.0f;
-			low_pass_filter_set_cutoff(&state.voices[0].filter, cutoff);
-		} else if (c == 'd') {
-			// Decrease resonance of low pass filter
-			float resonance = state.voices[0].filter.resonance - 0.1f;
-			low_pass_filter_set_resonance(&state.voices[0].filter, resonance);
-		} else if (c == 'f') {
-			// Increase resonance of low pass filter
-			float resonance = state.voices[0].filter.resonance + 0.1f;
-			low_pass_filter_set_resonance(&state.voices[0].filter, resonance);
-		}
-	}
+	// Event loop
+	ev_run(loop, 0);
 
 	a_err = Pa_StopStream(stream);
 	if (a_err != paNoError) {

@@ -34,14 +34,14 @@ init_ui(void)
 }
 
 void
-ui_tick(struct ui *ui, struct state *state, int waveform_len, float max_val)
+ui_tick(struct state *state, int waveform_len, float max_val)
 {
-	werase(ui->win); // Clear the waveform window
-	plot_waveform(state->vis_waveform, waveform_len, max_val, ui->win);
-	box(ui->win, 0, 0); // Draw the box around the waveform window
+	werase(state->ui.win); // Clear the waveform window
+	plot_waveform(state->vis_waveform, waveform_len, max_val, state->ui.win);
+	box(state->ui.win, 0, 0); // Draw the box around the waveform window
 
 	// Refresh the waveform window without updating the screen
-	wnoutrefresh(ui->win);
+	wnoutrefresh(state->ui.win);
 	print_osc_status_line(state);
 	print_filter_status_line(state);
 	print_env_status_line(state);
