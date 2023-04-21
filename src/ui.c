@@ -28,8 +28,10 @@ init_ui(void)
 	wrefresh(win);
 	box(win, 0, 0); // Draw the box around the waveform window
 
-	struct ui ui = {.win = win,
-		.frame_duration = frame_duration};
+	struct ui ui = {
+		.win = win,
+		.frame_duration = frame_duration
+	};
 	return ui;
 }
 
@@ -158,7 +160,7 @@ print_osc_status_line(struct state *state)
 	attroff(A_BOLD);
 
 	attron(COLOR_PAIR(1));
-	printw("%f", state->time_index);
+	printw("%f", state->wave_time_index);
 	attroff(COLOR_PAIR(1));
 }
 

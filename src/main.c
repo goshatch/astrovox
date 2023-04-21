@@ -36,10 +36,10 @@ audio_callback(const void *inputBuffer, void *outputBuffer, unsigned long frames
 	for (unsigned long i = 0; i < framesPerBuffer; i++) {
 		float sample = 0.0f;
 
-		sample = state->voices[0].osc.generator(state->time_index);
-		state->time_index += increment;
-		if (state->time_index >= 1.0f) {
-			state->time_index -= 1.0f;
+		sample = state->voices[0].osc.generator(state->wave_time_index);
+		state->wave_time_index += increment;
+		if (state->wave_time_index >= 1.0f) {
+			state->wave_time_index -= 1.0f;
 		}
 
 		float env_value = env_process(&state->voices[0].env);
@@ -54,9 +54,11 @@ audio_callback(const void *inputBuffer, void *outputBuffer, unsigned long frames
 }
 
 static void
-ui_timer_cb(EV_P_ struct stateful_watcher *w, int revents)
+ui_timer_cb(EV_P_ ev_timer *w, int revents)
 {
-	struct state *state = w->state;
+	(void)loop;
+	(void)revents;
+	struct state *state = (struct state *)w->data;
 	// Generate a waveform using the currently selected generator
 	float vis_increment =
 		state->voices[0].osc.frequency / SAMPLE_RATE * (BUFFER_SIZE / (float)(WINDOW_WIDTH - 2));
@@ -84,14 +86,16 @@ ui_timer_cb(EV_P_ struct stateful_watcher *w, int revents)
 }
 
 static void
-keyboard_cb(EV_P_ struct stateful_watcher *w, int revents)
+keyboard_cb(EV_P_ ev_io *w, int revents)
 {
-	struct state *state = w->state;
+	(void)loop;
+	(void)revents;
+	struct state *state = (struct state *)w->data;
 	// Keyboard input callback
 
 	int c = getch();
 	if (c == 'q') {
-		exit(1);
+		ev_break (EV_A_ EVBREAK_ALL);
 	} else if (c == 'j') {
 		prev_wave_gen(&state->voices[0].osc);
 	} else if (c == 'k') {
@@ -174,9 +178,11 @@ keyboard_cb(EV_P_ struct stateful_watcher *w, int revents)
 }
 
 static void
-midi_cb(EV_P_ struct stateful_watcher *w, int revents)
+midi_cb(EV_P_ ev_check *w, int revents)
 {
-	struct state *state = w->state;
+	(void)loop;
+	(void)revents;
+	struct state *state = (struct state*)w->data;
 	// Handle MIDI input
 	PmEvent buffer[256];
 	int num_events;
@@ -216,25 +222,27 @@ main(void)
 		#ifndef DEBUG_HIDE_UI
 		.ui = init_ui(),
 		#endif
-		.time_index = 0.0,
+		.wave_time_index = 0.0,
 		.vis_time_index = 0.0
 	};
 
 	// Timer for UI updates
-	struct stateful_watcher ui_watcher;
-	ui_watcher.state = &state;
-	ev_timer_init((ev_timer *)&ui_watcher.watcher, (void *)ui_timer_cb, 0., 1./24);
-	ev_timer_start(loop, (ev_timer *)&ui_watcher.watcher);
+	ev_timer ui_watcher;
+	ev_timer_init(&ui_watcher, (void (*)(struct ev_loop *, ev_timer *, int))ui_timer_cb, 0.0, 1.0/24);
+	ui_watcher.data = &state;
+	ev_timer_start(loop, &ui_watcher);
 
 	// I/O watcher for keyboard input
-	struct stateful_watcher keyboard_watcher;
-	ev_io_init((ev_io *)&keyboard_watcher.watcher, (void *)keyboard_cb, fileno(stdin), EV_READ);
-	ev_io_start(loop, (ev_io *)&keyboard_watcher.watcher);
+	ev_io keyboard_watcher;
+	ev_io_init(&keyboard_watcher, (void (*)(struct ev_loop *, ev_io *, int))keyboard_cb, fileno(stdin), EV_READ);
+	keyboard_watcher.data = &state;
+	ev_io_start(loop, &keyboard_watcher);
 
 	// Custom watcher for MIDI input
-	struct stateful_watcher midi_watcher;
-	ev_check_init((ev_check *)&midi_watcher, (void *)midi_cb);
-	ev_check_start(loop, (ev_check *)&midi_watcher.watcher);
+	ev_check midi_watcher;
+	ev_check_init(&midi_watcher, (void (*)(struct ev_loop *, ev_check *, int))midi_cb);
+	midi_watcher.data = &state;
+	ev_check_start(loop, &midi_watcher);
 
 	// Initialize PortAudio
 	PaError a_err= Pa_Initialize();
