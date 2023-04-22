@@ -194,6 +194,8 @@ midi_cb(EV_P_ ev_check *w, int revents)
 			int data1 = Pm_MessageData1(buffer[i].message);
 			int data2 = Pm_MessageData2(buffer[i].message);
 
+			// printf("MIDI: status %d data1 %d data2 %d\n", status, data1, data2);
+
 			if (status == (0x90 | (0x0F & MIDI_CHANNEL))) { // Note On event
 				if (data2 > 0) {
 					state->voices[0].note.value = data1;
