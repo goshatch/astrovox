@@ -13,7 +13,8 @@ struct WINDOW;
 struct state;
 
 struct ui {
-	WINDOW *win;
+	WINDOW *waveform_win;
+	WINDOW *status_win;
 	float frame_duration;
 };
 

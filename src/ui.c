@@ -23,13 +23,15 @@ init_ui(void)
 		init_pair(1, COLOR_CYAN, COLOR_BLACK);  // Teal color pair
 	}
 
-	// Create window for displaying waveform
-	WINDOW *win = newwin(WINDOW_HEIGHT, WINDOW_WIDTH, 0, 0);
-	wrefresh(win);
-	box(win, 0, 0); // Draw the box around the waveform window
+	WINDOW *waveform_win = newwin(WINDOW_HEIGHT, WINDOW_WIDTH, 0, 0);
+	WINDOW *status_win = newwin(4, WINDOW_WIDTH, WINDOW_HEIGHT, 0);
+
+	wrefresh(waveform_win);
+	box(waveform_win, 0, 0); // Draw the box around the waveform window
 
 	struct ui ui = {
-		.win = win,
+		.waveform_win = waveform_win,
+		.status_win = status_win,
 		.frame_duration = frame_duration
 	};
 	return ui;
@@ -38,16 +40,18 @@ init_ui(void)
 void
 ui_tick(struct state *state, int waveform_len, float max_val)
 {
-	werase(state->ui.win); // Clear the waveform window
-	plot_waveform(state->vis_waveform, waveform_len, max_val, state->ui.win);
-	box(state->ui.win, 0, 0); // Draw the box around the waveform window
+	werase(state->ui.waveform_win); // Clear the waveform window
+	plot_waveform(state->vis_waveform, waveform_len, max_val, state->ui.waveform_win);
+	box(state->ui.waveform_win, 0, 0); // Draw the box around the waveform window
+	wnoutrefresh(state->ui.waveform_win);
 
-	// Refresh the waveform window without updating the screen
-	wnoutrefresh(state->ui.win);
 	print_osc_status_line(state);
 	print_filter_status_line(state);
 	print_env_status_line(state);
 	print_midi_status_line(state);
+	wnoutrefresh(state->ui.status_win);
+
+	doupdate();
 }
 
 void
@@ -100,9 +104,6 @@ plot_waveform(float *waveform, int waveform_len, float max_val, WINDOW *win)
 			}
 		}
 	}
-
-	wnoutrefresh(win);
-	doupdate();
 }
 
 void
@@ -124,74 +125,77 @@ get_note_name(int key_position, char *note_name)
 void
 print_midi_status_line(struct state *state)
 {
-	attron(A_BOLD);
-	mvprintw(WINDOW_HEIGHT + 3, 0, "\t| MIDI");
-	attroff(A_BOLD);
+	int row = 3;
+	wattron(state->ui.status_win, A_BOLD);
+	mvwprintw(state->ui.status_win, row, 0, "\t| MIDI");
+	wattroff(state->ui.status_win, A_BOLD);
 
-	attron(COLOR_PAIR(1));
-	printw(" %d: %s %s", state->input.midi_device_id, state->input.selected_midi_device_info->interf, state->input.selected_midi_device_info->name);
-	attroff(COLOR_PAIR(1));
+	wattron(state->ui.status_win, COLOR_PAIR(1));
+	wprintw(state->ui.status_win, " %d: %s %s", state->input.midi_device_id, state->input.selected_midi_device_info->interf, state->input.selected_midi_device_info->name);
+	wattroff(state->ui.status_win, COLOR_PAIR(1));
 }
 
 void
 print_osc_status_line(struct state *state)
 {
+	int row = 0;
 	char note_name[4];
 	get_note_name(state->voices[0].note.value, note_name);
 
-	attron(A_BOLD);
-	mvprintw(WINDOW_HEIGHT, 0, "VOICE1\t| OSC");
-	attroff(A_BOLD);
+	wattron(state->ui.status_win, A_BOLD);
+	mvwprintw(state->ui.status_win, row, 0, "VOICE1\t| OSC");
+	wattroff(state->ui.status_win, A_BOLD);
 
-	attron(COLOR_PAIR(1));
-	printw(" %s", wave_name(state->voices[0].osc.type));
-	attroff(COLOR_PAIR(1));
+	wattron(state->ui.status_win, COLOR_PAIR(1));
+	wprintw(state->ui.status_win, " %s", wave_name(state->voices[0].osc.type));
+	wattroff(state->ui.status_win, COLOR_PAIR(1));
 
-	printw(" | ");
+	wprintw(state->ui.status_win, " | ");
 
-	attron(COLOR_PAIR(1));
-	printw("%s", note_name);
-	attroff(COLOR_PAIR(1));
+	wattron(state->ui.status_win, COLOR_PAIR(1));
+	wprintw(state->ui.status_win, "%s", note_name);
+	wattroff(state->ui.status_win, COLOR_PAIR(1));
 
-	printw(" | ");
+	wprintw(state->ui.status_win, " | ");
 
-	attron(A_BOLD);
-	printw("TIME ");
-	attroff(A_BOLD);
+	wattron(state->ui.status_win, A_BOLD);
+	wprintw(state->ui.status_win, "TIME ");
+	wattroff(state->ui.status_win, A_BOLD);
 
-	attron(COLOR_PAIR(1));
-	printw("%f", state->wave_time_index);
-	attroff(COLOR_PAIR(1));
+	wattron(state->ui.status_win, COLOR_PAIR(1));
+	wprintw(state->ui.status_win, "%f", state->wave_time_index);
+	wattroff(state->ui.status_win, COLOR_PAIR(1));
 }
 
 void
 print_env_status_line(struct state *state)
 {
-	attron(A_BOLD);
-	mvprintw(WINDOW_HEIGHT + 2, 0, "\t| ENV");
-	attroff(A_BOLD);
+	int row = 2;
+	wattron(state->ui.status_win, A_BOLD);
+	mvwprintw(state->ui.status_win, row, 0, "\t| ENV");
+	wattroff(state->ui.status_win, A_BOLD);
 
-	printw(" A");
-	attron(COLOR_PAIR(1));
-	printw("%.2f", state->voices[0].env.attack_time);
-	attroff(COLOR_PAIR(1));
+	wprintw(state->ui.status_win, " A");
+	wattron(state->ui.status_win, COLOR_PAIR(1));
+	wprintw(state->ui.status_win, "%.2f", state->voices[0].env.attack_time);
+	wattroff(state->ui.status_win, COLOR_PAIR(1));
 
-	printw(" D");
-	attron(COLOR_PAIR(1));
-	printw("%.2f", state->voices[0].env.decay_time);
-	attroff(COLOR_PAIR(1));
+	wprintw(state->ui.status_win, " D");
+	wattron(state->ui.status_win, COLOR_PAIR(1));
+	wprintw(state->ui.status_win, "%.2f", state->voices[0].env.decay_time);
+	wattroff(state->ui.status_win, COLOR_PAIR(1));
 
-	printw(" S");
-	attron(COLOR_PAIR(1));
-	printw("%.2f", state->voices[0].env.sustain_level);
-	attroff(COLOR_PAIR(1));
+	wprintw(state->ui.status_win, " S");
+	wattron(state->ui.status_win, COLOR_PAIR(1));
+	wprintw(state->ui.status_win, "%.2f", state->voices[0].env.sustain_level);
+	wattroff(state->ui.status_win, COLOR_PAIR(1));
 
-	printw(" R");
-	attron(COLOR_PAIR(1));
-	printw("%.2f", state->voices[0].env.release_time);
-	attroff(COLOR_PAIR(1));
+	wprintw(state->ui.status_win, " R");
+	wattron(state->ui.status_win, COLOR_PAIR(1));
+	wprintw(state->ui.status_win, "%.2f", state->voices[0].env.release_time);
+	wattroff(state->ui.status_win, COLOR_PAIR(1));
 
-	printw(" | state: %d, level: %.3f",
+	wprintw(state->ui.status_win, " | state: %d, level: %.3f",
 		state->voices[0].env.state,
 		state->voices[0].env.current_level);
 }
@@ -199,18 +203,19 @@ print_env_status_line(struct state *state)
 void
 print_filter_status_line(struct state *state)
 {
-	attron(A_BOLD);
-	mvprintw(WINDOW_HEIGHT + 1, 0, "\t| LOPASSF");
-	attroff(A_BOLD);
+	int row = 1;
+	wattron(state->ui.status_win, A_BOLD);
+	mvwprintw(state->ui.status_win, row, 0, "\t| LOPASSF");
+	wattroff(state->ui.status_win, A_BOLD);
 
-	printw(" CUTOFF");
-	attron(COLOR_PAIR(1));
-	printw("%.2f", state->voices[0].filter.cutoff);
-	attroff(COLOR_PAIR(1));
-	printw("Hz");
+	wprintw(state->ui.status_win, " CUTOFF");
+	wattron(state->ui.status_win, COLOR_PAIR(1));
+	wprintw(state->ui.status_win, "%.2f", state->voices[0].filter.cutoff);
+	wattroff(state->ui.status_win, COLOR_PAIR(1));
+	wprintw(state->ui.status_win, "Hz");
 
-	printw(" RES Q");
-	attron(COLOR_PAIR(1));
-	printw("%.2f", state->voices[0].filter.resonance);
-	attroff(COLOR_PAIR(1));
+	wprintw(state->ui.status_win, " RES Q");
+	wattron(state->ui.status_win, COLOR_PAIR(1));
+	wprintw(state->ui.status_win, "%.2f", state->voices[0].filter.resonance);
+	wattroff(state->ui.status_win, COLOR_PAIR(1));
 }
