@@ -1,42 +1,12 @@
-# A synth from scratch
+# A S T R O V O X 🪐
 
-This is an experimental project aimed at playing with sound generation. The target is to write an approximate software emulation of the Roland [Juno-60](https://en.wikipedia.org/wiki/Roland_Juno-60) synthesizer.
+## A synth from scratch
+
+This is an experimental project aimed at playing with sound generation. The original goal was to write an approximate software emulation of the Roland [Juno-60](https://en.wikipedia.org/wiki/Roland_Juno-60) synthesizer, but as the project progressed, it took on a life of its own and became much more open ended.
 
 ## Play project
 
 This project is a “play project”: sound generation is a brand new domain to me, I’ve last worked with C in uni in 2005, so I have no hopes of a “good enough” outcome — only of exploring and enjoying the process.
-
-## Components
-
-My current understanding is that a synthesizer works like this:
-
-```
-┌───────────┐
-│    DCO    │
-└─────┬─────┘
-      │
-┌─────▼─────┐    ┌──────────┐
-│  Filters  ◄────┤   LFOs   │
-└─────┬─────┘    └─────┬────┘
-      │                │
-┌─────▼─────┐          │
-│ Envelopes ◄──────────┘
-└─────┬─────┘
-      │
-┌─────▼─────┐
-│  Outputs  │
-└───────────┘
-```
-
-### Oscillator (DCO)
-
-### Filters
-
-### Envelopes
-
-### LFOs
-
-### Audio output
 
 ## Contributing
 

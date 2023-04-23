@@ -5,8 +5,8 @@ LDFLAGS = -lm -lncurses -lportaudio -lportmidi -lev
 BUILD_DIR = build
 SRC_DIR = src
 
-TARGET = juno
-DEBUG_TARGET = juno_debug
+TARGET = astrovox
+DEBUG_TARGET = astrovox_debug
 
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
