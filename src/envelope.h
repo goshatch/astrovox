@@ -1,6 +1,11 @@
 #ifndef ENVELOPE_H
 #define ENVELOPE_H
 
+#define ADSR_MAX_TIME 5.0f
+#define ADSR_MIN_TIME 0.0f
+#define ADSR_MAX_LEVEL 1.0f
+#define ADSR_MIN_LEVEL 0.0f
+
 struct envelope {
 	float attack_time;
 	float decay_time;

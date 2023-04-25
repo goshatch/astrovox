@@ -113,50 +113,50 @@ keyboard_cb(EV_P_ ev_io *w, int revents)
 	} else if (c == 'z') {
 		// Decrease attack time
 		state->voices[0].env.attack_time -= 0.05f;
-		if (state->voices[0].env.attack_time < 0.0f) {
-			state->voices[0].env.attack_time = 0.0f;
+		if (state->voices[0].env.attack_time < ADSR_MIN_TIME) {
+			state->voices[0].env.attack_time = ADSR_MIN_TIME;
 		}
 	} else if (c == 'x') {
 		// Increase attack time
 		state->voices[0].env.attack_time += 0.05f;
-		if (state->voices[0].env.attack_time > 1.0f) {
-			state->voices[0].env.attack_time = 1.0f;
+		if (state->voices[0].env.attack_time > ADSR_MAX_TIME) {
+			state->voices[0].env.attack_time = ADSR_MAX_TIME;
 		}
 	} else if (c == 'c') {
 		// Decrease decay time
 		state->voices[0].env.decay_time -= 0.05f;
-		if (state->voices[0].env.decay_time < 0.0f) {
-			state->voices[0].env.decay_time = 0.0f;
+		if (state->voices[0].env.decay_time < ADSR_MIN_TIME) {
+			state->voices[0].env.decay_time = ADSR_MIN_TIME;
 		}
 	} else if (c == 'v') {
 		// Increase decay time
 		state->voices[0].env.decay_time += 0.05f;
-		if (state->voices[0].env.decay_time > 1.0f) {
-			state->voices[0].env.decay_time = 1.0f;
+		if (state->voices[0].env.decay_time > ADSR_MAX_TIME) {
+			state->voices[0].env.decay_time = ADSR_MAX_TIME;
 		}
 	} else if (c == 'b') {
 		// Decrease sustain level
 		state->voices[0].env.sustain_level -= 0.05f;
-		if (state->voices[0].env.sustain_level < 0.0f) {
-			state->voices[0].env.sustain_level = 0.0f;
+		if (state->voices[0].env.sustain_level < ADSR_MIN_LEVEL) {
+			state->voices[0].env.sustain_level = ADSR_MIN_LEVEL;
 		}
 	} else if (c == 'n') {
 		// Increase sustain level
 		state->voices[0].env.sustain_level += 0.05f;
-		if (state->voices[0].env.sustain_level > 1.0f) {
-			state->voices[0].env.sustain_level = 1.0f;
+		if (state->voices[0].env.sustain_level > ADSR_MAX_LEVEL) {
+			state->voices[0].env.sustain_level = ADSR_MAX_LEVEL;
 		}
 	} else if (c == 'm') {
 		// Decrease release time
 		state->voices[0].env.release_time -= 0.05f;
-		if (state->voices[0].env.release_time < 0.0f) {
-			state->voices[0].env.release_time = 0.0f;
+		if (state->voices[0].env.release_time < ADSR_MIN_TIME) {
+			state->voices[0].env.release_time = ADSR_MIN_TIME;
 		}
 	} else if (c == ',') {
 		// Increase release time
 		state->voices[0].env.release_time += 0.05f;
-		if (state->voices[0].env.release_time > 1.0f) {
-			state->voices[0].env.release_time = 1.0f;
+		if (state->voices[0].env.release_time > ADSR_MAX_TIME) {
+			state->voices[0].env.release_time = ADSR_MAX_TIME;
 		}
 	} else if (c == 'a') {
 		// Decrease cutoff frequency of low pass filter
@@ -194,7 +194,9 @@ midi_cb(EV_P_ ev_check *w, int revents)
 			int data1 = Pm_MessageData1(buffer[i].message);
 			int data2 = Pm_MessageData2(buffer[i].message);
 
-			// printf("MIDI: status %d data1 %d data2 %d\n", status, data1, data2);
+			#ifdef DEBUG_HIDE_UI
+			printf("MIDI: status %d data1 %d data2 %d\n", status, data1, data2);
+			#endif
 
 			if (status == (0x90 | (0x0F & MIDI_CHANNEL))) { // Note On event
 				if (data2 > 0) {
@@ -206,6 +208,23 @@ midi_cb(EV_P_ ev_check *w, int revents)
 				}
 			} else if (status == ((0x80 | (0x0F & MIDI_CHANNEL)))) { // Note Off event
 				env_note_off(&state->voices[0].env);
+			} else if ((status & 0xF0) == 0xB0) { // Control change event
+				// NOTE: These values are all for my specific Arturia MiniLab 3
+				if (data1 == 82) { // Fader 1
+					state->voices[0].env.attack_time = ADSR_MIN_TIME + (data2 / 127.0f) * (ADSR_MAX_TIME - ADSR_MIN_TIME);
+				} else if (data1 == 83) { // Fader 2
+					state->voices[0].env.decay_time = ADSR_MIN_TIME + (data2 / 127.0f) * (ADSR_MAX_TIME - ADSR_MIN_TIME);
+				} else if (data1 == 85) { // Fader 3
+					state->voices[0].env.sustain_level = ADSR_MIN_LEVEL + (data2 / 127.0f) * (ADSR_MAX_LEVEL - ADSR_MIN_LEVEL);
+				} else if (data1 == 17) { // Fader 4
+					state->voices[0].env.release_time = ADSR_MIN_TIME + (data2 / 127.0f) * (ADSR_MAX_TIME - ADSR_MIN_TIME);
+				} else if (data1 == 74) { // Knob 1
+					float cutoff = LOPASS_CUTOFF_MIN + (data2 / 127.0f) * (LOPASS_CUTOFF_MAX - LOPASS_CUTOFF_MIN);
+					low_pass_filter_set_cutoff(&state->voices[0].filter, cutoff);
+				} else if (data1 == 71) { // Knob 2
+					float resonance = LOPASS_RES_MIN + (data2 / 127.0f) * (LOPASS_RES_MAX - LOPASS_RES_MIN);
+					low_pass_filter_set_resonance(&state->voices[0].filter, resonance);
+				}
 			}
 		}
 	}
