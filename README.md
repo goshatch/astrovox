@@ -1,5 +1,7 @@
 # A S T R O V O X 🪐
 
+[![Astrovox: chorus preview](https://img.youtube.com/vi/8iqiGaBeByc/maxresdefault.jpg)](https://youtu.be/8iqiGaBeByc)
+
 ## A synth from scratch
 
 This is an experimental project aimed at playing with sound generation. The original goal was to write an approximate software emulation of the Roland [Juno-60](https://en.wikipedia.org/wiki/Roland_Juno-60) synthesizer, but as the project progressed, it took on a life of its own and became much more open ended.
