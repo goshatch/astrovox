@@ -165,6 +165,16 @@ print_osc_status_line(struct state *state)
 	wattron(state->ui.status_win, COLOR_PAIR(1));
 	wprintw(state->ui.status_win, "%f", state->wave_time_index);
 	wattroff(state->ui.status_win, COLOR_PAIR(1));
+
+	wprintw(state->ui.status_win, " | ");
+
+	wattron(state->ui.status_win, A_BOLD);
+	wprintw(state->ui.status_win, "CHORUS ");
+	wattroff(state->ui.status_win, A_BOLD);
+
+	wattron(state->ui.status_win, COLOR_PAIR(1));
+	wprintw(state->ui.status_win, "%s", state->voices[0].chorus ? wave_name(state->voices[0].chorus_osc.type) : "OFF  ");
+	wattroff(state->ui.status_win, COLOR_PAIR(1));
 }
 
 void

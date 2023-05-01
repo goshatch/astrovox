@@ -14,6 +14,7 @@ struct state {
 	struct ui ui;
 	struct voice voices[NUM_VOICES];
 	float wave_time_index;
+	float wave_time_index_chorus;
 	float vis_time_index;
 	float vis_waveform[BUFFER_SIZE];
 };

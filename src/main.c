@@ -33,6 +33,9 @@ audio_callback(const void *inputBuffer, void *outputBuffer, unsigned long frames
 	float frequency = note_frequency(state->voices[0].note.value);
 	float increment = frequency / SAMPLE_RATE;
 
+	float frequency_chorus = frequency / 2.0f; // 1 octave down
+    float increment_chorus = frequency_chorus / SAMPLE_RATE;
+
 	for (unsigned long i = 0; i < framesPerBuffer; i++) {
 		float sample = 0.0f;
 
@@ -40,6 +43,16 @@ audio_callback(const void *inputBuffer, void *outputBuffer, unsigned long frames
 		state->wave_time_index += increment;
 		if (state->wave_time_index >= 1.0f) {
 			state->wave_time_index -= 1.0f;
+		}
+
+		if (state->voices[0].chorus) {
+			float sample_chorus = state->voices[0].chorus_osc.generator(state->wave_time_index_chorus);
+			state->wave_time_index_chorus += increment_chorus;
+			if (state->wave_time_index_chorus >= 1.0f) {
+				state->wave_time_index_chorus -= 1.0f;
+			}
+
+			sample = (sample + sample_chorus) / 2.0f;
 		}
 
 		float env_value = env_process(&state->voices[0].env);
@@ -100,6 +113,10 @@ keyboard_cb(EV_P_ ev_io *w, int revents)
 		prev_wave_gen(&state->voices[0].osc);
 	} else if (c == 'k') {
 		next_wave_gen(&state->voices[0].osc);
+	} else if (c == 'J') {
+		prev_wave_gen(&state->voices[0].chorus_osc);
+	} else if (c == 'K') {
+		next_wave_gen(&state->voices[0].chorus_osc);
 	} else if (c == 'h') { // Shift octave down
 		if (state->voices[0].note.value > 11) {
 			state->voices[0].note.value -= 12;
@@ -174,6 +191,9 @@ keyboard_cb(EV_P_ ev_io *w, int revents)
 		// Increase resonance of low pass filter
 		float resonance = state->voices[0].filter.resonance + 0.1f;
 		low_pass_filter_set_resonance(&state->voices[0].filter, resonance);
+	} else if (c == '/') {
+		int chorus = state->voices[0].chorus == TRUE ? FALSE : TRUE;
+		state->voices[0].chorus = chorus;
 	}
 }
 
@@ -243,8 +263,9 @@ main(void)
 		#ifndef DEBUG_HIDE_UI
 		.ui = init_ui(),
 		#endif
-		.wave_time_index = 0.0,
-		.vis_time_index = 0.0
+		.wave_time_index = 0.0f,
+		.wave_time_index_chorus = 0.0f,
+		.vis_time_index = 0.0f
 	};
 
 	// Timer for UI updates

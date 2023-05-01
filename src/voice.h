@@ -13,9 +13,11 @@ struct note {
 
 struct voice {
 	struct oscillator osc;
+	struct oscillator chorus_osc;
 	struct envelope env;
 	struct note note;
 	struct low_pass_filter filter;
+	int chorus;
 };
 
 struct voice init_voice(void);
