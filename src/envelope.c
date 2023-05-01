@@ -1,7 +1,7 @@
 #include "envelope.h"
 
 struct envelope
-init_env(float attack_time, float decay_time, float sustain_level, float release_time, float sample_rate)
+env_init(float attack_time, float decay_time, float sustain_level, float release_time, float sample_rate)
 {
 	struct envelope env = {
 		.attack_time = attack_time,

@@ -4,7 +4,7 @@
 #include "input.h"
 
 struct input
-init_input(void)
+input_init(void)
 {
 	struct input input = {
 		.midi_device_id = -1,
@@ -17,14 +17,14 @@ init_input(void)
 		exit(1);
 	}
 
-	select_midi_device(&input);
-	open_midi_stream(&input);
+	input_select_midi_device(&input);
+	input_open_midi_stream(&input);
 
 	return input;
 }
 
 void
-open_midi_stream(struct input *input)
+input_open_midi_stream(struct input *input)
 {
 	PmError err = Pm_OpenInput(&input->midi_stream, input->midi_device_id, NULL, 512, NULL, NULL);
 	if (err != pmNoError) {
@@ -34,7 +34,7 @@ open_midi_stream(struct input *input)
 }
 
 void
-teardown_midi(void)
+input_teardown_midi(void)
 {
 	PmError err = Pm_Terminate();
 	if (err != pmNoError) {
@@ -43,7 +43,7 @@ teardown_midi(void)
 }
 
 void
-select_midi_device(struct input *input)
+input_select_midi_device(struct input *input)
 {
 	PmError err = Pm_Initialize();
 	if (err != pmNoError) {
@@ -64,7 +64,7 @@ select_midi_device(struct input *input)
 
 	if (selected_device < 0 || selected_device >= num_devices) {
 		printf("Invalid device index.\n");
-		select_midi_device(input);
+		input_select_midi_device(input);
 	} else {
 		input->midi_device_id = selected_device;
 		input->selected_midi_device_info = Pm_GetDeviceInfo(selected_device);

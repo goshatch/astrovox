@@ -20,6 +20,6 @@ struct voice {
 	int chorus;
 };
 
-struct voice init_voice(void);
+struct voice voice_init(void);
 
 #endif

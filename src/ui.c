@@ -7,7 +7,7 @@
 #include "ui.h"
 
 struct ui
-init_ui(void)
+ui_init(void)
 {
 	const float frame_duration = 1.0 / MAX_FPS;
 
@@ -41,21 +41,21 @@ void
 ui_tick(struct state *state, int waveform_len, float max_val)
 {
 	werase(state->ui.waveform_win); // Clear the waveform window
-	plot_waveform(state->vis_waveform, waveform_len, max_val, state->ui.waveform_win);
+	ui_plot_waveform(state->vis_waveform, waveform_len, max_val, state->ui.waveform_win);
 	box(state->ui.waveform_win, 0, 0); // Draw the box around the waveform window
 	wnoutrefresh(state->ui.waveform_win);
 
-	print_osc_status_line(state);
-	print_filter_status_line(state);
-	print_env_status_line(state);
-	print_midi_status_line(state);
+	ui_print_osc_status_line(state);
+	ui_print_filter_status_line(state);
+	ui_print_env_status_line(state);
+	ui_print_midi_status_line(state);
 	wnoutrefresh(state->ui.status_win);
 
 	doupdate();
 }
 
 void
-plot_waveform(float *waveform, int waveform_len, float max_val, WINDOW *win)
+ui_plot_waveform(float *waveform, int waveform_len, float max_val, WINDOW *win)
 {
 	// Clear waveform window
 	werase(win);
@@ -107,7 +107,7 @@ plot_waveform(float *waveform, int waveform_len, float max_val, WINDOW *win)
 }
 
 void
-get_note_name(int key_position, char *note_name)
+ui_get_note_name(int key_position, char *note_name)
 {
 	const char *note_names[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 
@@ -123,7 +123,7 @@ get_note_name(int key_position, char *note_name)
 }
 
 void
-print_midi_status_line(struct state *state)
+ui_print_midi_status_line(struct state *state)
 {
 	int row = 3;
 	wattron(state->ui.status_win, A_BOLD);
@@ -136,18 +136,18 @@ print_midi_status_line(struct state *state)
 }
 
 void
-print_osc_status_line(struct state *state)
+ui_print_osc_status_line(struct state *state)
 {
 	int row = 0;
 	char note_name[4];
-	get_note_name(state->voices[0].note.value, note_name);
+	ui_get_note_name(state->voices[0].note.value, note_name);
 
 	wattron(state->ui.status_win, A_BOLD);
 	mvwprintw(state->ui.status_win, row, 0, "VOICE1\t| OSC");
 	wattroff(state->ui.status_win, A_BOLD);
 
 	wattron(state->ui.status_win, COLOR_PAIR(1));
-	wprintw(state->ui.status_win, " %s", wave_name(state->voices[0].osc.type));
+	wprintw(state->ui.status_win, " %s", osc_wave_name(state->voices[0].osc.type));
 	wattroff(state->ui.status_win, COLOR_PAIR(1));
 
 	wprintw(state->ui.status_win, " | ");
@@ -173,12 +173,12 @@ print_osc_status_line(struct state *state)
 	wattroff(state->ui.status_win, A_BOLD);
 
 	wattron(state->ui.status_win, COLOR_PAIR(1));
-	wprintw(state->ui.status_win, "%s", state->voices[0].chorus ? wave_name(state->voices[0].chorus_osc.type) : "OFF  ");
+	wprintw(state->ui.status_win, "%s", state->voices[0].chorus ? osc_wave_name(state->voices[0].chorus_osc.type) : "OFF  ");
 	wattroff(state->ui.status_win, COLOR_PAIR(1));
 }
 
 void
-print_env_status_line(struct state *state)
+ui_print_env_status_line(struct state *state)
 {
 	int row = 2;
 	wattron(state->ui.status_win, A_BOLD);
@@ -211,7 +211,7 @@ print_env_status_line(struct state *state)
 }
 
 void
-print_filter_status_line(struct state *state)
+ui_print_filter_status_line(struct state *state)
 {
 	int row = 1;
 	wattron(state->ui.status_win, A_BOLD);

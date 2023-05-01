@@ -110,13 +110,13 @@ keyboard_cb(EV_P_ ev_io *w, int revents)
 	if (c == 'q') {
 		ev_break (EV_A_ EVBREAK_ALL);
 	} else if (c == 'j') {
-		prev_wave_gen(&state->voices[0].osc);
+		osc_prev_wave_gen(&state->voices[0].osc);
 	} else if (c == 'k') {
-		next_wave_gen(&state->voices[0].osc);
+		osc_next_wave_gen(&state->voices[0].osc);
 	} else if (c == 'J') {
-		prev_wave_gen(&state->voices[0].chorus_osc);
+		osc_prev_wave_gen(&state->voices[0].chorus_osc);
 	} else if (c == 'K') {
-		next_wave_gen(&state->voices[0].chorus_osc);
+		osc_next_wave_gen(&state->voices[0].chorus_osc);
 	} else if (c == 'h') { // Shift octave down
 		if (state->voices[0].note.value > 11) {
 			state->voices[0].note.value -= 12;
@@ -258,10 +258,10 @@ main(void)
 	signal(SIGINT, sigint_handler);
 
 	struct state state = {
-		.voices[0] = init_voice(),
-		.input = init_input(),
+		.voices[0] = voice_init(),
+		.input = input_init(),
 		#ifndef DEBUG_HIDE_UI
-		.ui = init_ui(),
+		.ui = ui_init(),
 		#endif
 		.wave_time_index = 0.0f,
 		.wave_time_index_chorus = 0.0f,
@@ -322,7 +322,7 @@ main(void)
 
 	Pa_Terminate();
 
-	teardown_midi();
+	input_teardown_midi();
 
 	#ifndef DEBUG_HIDE_UI
 	endwin();

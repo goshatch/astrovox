@@ -19,7 +19,7 @@ struct low_pass_filter {
 	float a4;
 };
 
-struct low_pass_filter init_low_pass_filter(float sample_rate, float cutoff, float resonance);
+struct low_pass_filter low_pass_filter_init(float sample_rate, float cutoff, float resonance);
 void low_pass_filter_set_cutoff(struct low_pass_filter *filter, float cutoff);
 void low_pass_filter_set_resonance(struct low_pass_filter *filter, float resonance);
 void low_pass_filter_update_coefficients(struct low_pass_filter *filter);

@@ -2,7 +2,7 @@
 #include "filter.h"
 
 struct low_pass_filter
-init_low_pass_filter(float sample_rate, float cutoff, float resonance)
+low_pass_filter_init(float sample_rate, float cutoff, float resonance)
 {
 	struct low_pass_filter filter;
 	filter.sample_rate = sample_rate;
