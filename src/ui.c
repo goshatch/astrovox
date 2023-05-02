@@ -229,3 +229,13 @@ ui_print_filter_status_line(struct state *state)
 	wprintw(state->ui.status_win, "%.2f", state->voices[0].filter.resonance);
 	wattroff(state->ui.status_win, COLOR_PAIR(1));
 }
+
+void
+ui_print_banner(void)
+{
+	printf("   _______   ________  ________  ________  ________  ________  ________  ________ \n");
+	printf("  ╱       ╲╲╱        ╲╱        ╲╱        ╲╱        ╲╱    ╱   ╲╱        ╲╱    ╱   ╲\n");
+	printf(" ╱        ╱╱        _╱        _╱         ╱         ╱         ╱         ╱_       _╱\n");
+	printf("╱         ╱-        ╱╱       ╱╱        _╱         ╱╲        ╱         ╱         ╱ \n");
+	printf("╲___╱____╱╲________╱ ╲______╱ ╲____╱___╱╲________╱  ╲______╱╲________╱╲___╱____╱  \n\n");
+}

@@ -26,4 +26,5 @@ void ui_print_osc_status_line(struct state *state);
 void ui_print_env_status_line(struct state *state);
 void ui_print_filter_status_line(struct state *state);
 void ui_print_midi_status_line(struct state *state);
+void ui_print_banner(void);
 #endif

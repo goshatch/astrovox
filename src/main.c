@@ -257,6 +257,8 @@ main(void)
 
 	signal(SIGINT, sigint_handler);
 
+	ui_print_banner();
+
 	struct state state = {
 		.voices[0] = voice_init(),
 		.input = input_init(),
