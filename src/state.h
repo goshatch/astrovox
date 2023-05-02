@@ -2,11 +2,11 @@
 #define STATE_H
 
 #include <ev.h>
+#include "constants.h"
 #include "input.h"
 #include "ui.h"
 #include "voice.h"
 
-#define BUFFER_SIZE 512
 #define NUM_VOICES 1
 
 struct state {

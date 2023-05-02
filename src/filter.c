@@ -1,11 +1,11 @@
 #include <math.h>
+#include "constants.h"
 #include "filter.h"
 
 struct low_pass_filter
-low_pass_filter_init(float sample_rate, float cutoff, float resonance)
+low_pass_filter_init(float cutoff, float resonance)
 {
 	struct low_pass_filter filter;
-	filter.sample_rate = sample_rate;
 	filter.cutoff = cutoff;
 	filter.resonance = resonance;
 	filter.a1 = 0.0f;
@@ -47,7 +47,7 @@ low_pass_filter_set_resonance(struct low_pass_filter *filter, float resonance)
 void
 low_pass_filter_update_coefficients(struct low_pass_filter *filter)
 {
-	float w = 2 * M_PI * filter->cutoff / filter->sample_rate;
+	float w = 2 * M_PI * filter->cutoff / SAMPLE_RATE;
 	filter->g = tan(w / 2);
 	filter->k = 1 / (filter->resonance + 1);
 }

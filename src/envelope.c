@@ -1,14 +1,14 @@
 #include "envelope.h"
+#include "constants.h"
 
 struct envelope
-env_init(float attack_time, float decay_time, float sustain_level, float release_time, float sample_rate)
+env_init(float attack_time, float decay_time, float sustain_level, float release_time)
 {
 	struct envelope env = {
 		.attack_time = attack_time,
 		.decay_time = decay_time,
 		.sustain_level = sustain_level,
 		.release_time = release_time,
-		.sample_rate = sample_rate,
 		.current_level = 0.0f,
 		.time = 0.0f,
 		.state = OFF
@@ -33,7 +33,7 @@ env_note_off(struct envelope *env)
 float
 env_process(struct envelope *env)
 {
-	float dt = 1.0f / env->sample_rate;
+	float dt = 1.0f / SAMPLE_RATE;
 
 	switch (env->state) {
 	case ATTACK:
